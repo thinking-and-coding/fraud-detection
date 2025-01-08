@@ -25,6 +25,7 @@ const pickFields = pick([
   "limit",
   "limitOperatorType",
   "ruleState",
+  "events",
   "windowMinutes",
 ]);
 
@@ -44,6 +45,7 @@ const sampleRules: {
     limitOperatorType: "GREATER",
     windowMinutes: 43200,
     ruleState: "ACTIVE",
+    events: ["pay","refund"],
   },
    2: {
      aggregateFieldName: "paymentAmount",
@@ -53,6 +55,7 @@ const sampleRules: {
      limitOperatorType: "GREATER_EQUAL",
      windowMinutes: 1440,
      ruleState: "ACTIVE",
+     events: ["pay"],
    },
   3: {
     aggregateFieldName: "COUNT_WITH_RESET_FLINK",
@@ -62,12 +65,14 @@ const sampleRules: {
     limitOperatorType: "GREATER_EQUAL",
     windowMinutes: 1440,
     ruleState: "ACTIVE",
+    events: ["refund"],
   },
 
 };
 
 const keywords = ["beneficiaryId", "payeeId", "paymentAmount", "paymentType"];
 const aggregateKeywords = ["paymentAmount", "COUNT_FLINK", "COUNT_WITH_RESET_FLINK"];
+const events = ["pay", "refund"];
 
 const MySelect = React.memo(CreatableSelect);
 
@@ -83,6 +88,7 @@ export const AddRuleModal: FC<Props> = props => {
     e.preventDefault();
     const data = pickFields(getFormData(e.target)) as RulePayload;
     data.groupingKeyNames = isArray(data.groupingKeyNames) ? data.groupingKeyNames : [data.groupingKeyNames];
+    data.events = isArray(data.events) ? data.events : [data.events];
 
     const rulePayload = JSON.stringify(data);
     const body = JSON.stringify({ rulePayload });
@@ -123,6 +129,16 @@ export const AddRuleModal: FC<Props> = props => {
               <option value="PAUSE">PAUSE</option>
               <option value="DELETE">DELETE</option>
             </Input>
+          </FieldGroup>
+
+          <FieldGroup label="events" icon={faInfoCircle}>
+            <MySelect
+                isMulti={true}
+                name="events"
+                className="react-select"
+                classNamePrefix="react-select"
+                options={events.map(k => ({ value: k, label: k }))}
+            />
           </FieldGroup>
 
           <FieldGroup label="aggregatorFunctionType" icon={faCalculator}>

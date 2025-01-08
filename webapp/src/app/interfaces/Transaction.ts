@@ -10,6 +10,7 @@
 
 export interface Transaction {
   beneficiaryId: number;
+  event: string;
   eventTime: number;
   payeeId: number;
   paymentAmount: number;

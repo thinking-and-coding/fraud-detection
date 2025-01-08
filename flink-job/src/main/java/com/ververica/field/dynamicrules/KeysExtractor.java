@@ -18,11 +18,20 @@
 
 package com.ververica.field.dynamicrules;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.Iterator;
 import java.util.List;
 
 /** Utilities for dynamic keys extraction by field name. */
+@Slf4j
 public class KeysExtractor {
+
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Extracts and concatenates field values by names.
@@ -30,21 +39,25 @@ public class KeysExtractor {
    * @param keyNames list of field names
    * @param object target for values extraction
    */
-  public static String getKey(List<String> keyNames, Object object)
-      throws NoSuchFieldException, IllegalAccessException {
-    StringBuilder sb = new StringBuilder();
-    sb.append("{");
-    if (keyNames.size() > 0) {
-      Iterator<String> it = keyNames.iterator();
-      appendKeyValue(sb, object, it.next());
-
-      while (it.hasNext()) {
-        sb.append(";");
+  public static String getKey(List<String> keyNames, Object object) throws JsonProcessingException {
+    try {
+      StringBuilder sb = new StringBuilder();
+      sb.append("{");
+      if (CollectionUtils.isNotEmpty(keyNames)) {
+        Iterator<String> it = keyNames.iterator();
         appendKeyValue(sb, object, it.next());
+
+        while (it.hasNext()) {
+          sb.append(";");
+          appendKeyValue(sb, object, it.next());
+        }
       }
+      sb.append("}");
+      return sb.toString();
+    } catch (IllegalAccessException | NoSuchFieldException e) {
+      log.error("Can't extract keyNames {} from {}. exception:", objectMapper.writeValueAsString(keyNames), objectMapper.writeValueAsString(object), e);
     }
-    sb.append("}");
-    return sb.toString();
+    return StringUtils.EMPTY;
   }
 
   private static void appendKeyValue(StringBuilder sb, Object object, String fieldName)

@@ -77,13 +77,17 @@ export const Payment = styled.div`
 const FlexSpan = styled.span`
   display: inline-flex;
   align-items: center;
-  width: 100px;
+  width: 120px;
   flex-basis: 33%;
   flex: 1 1 auto;
 `;
 
 export const Payee = styled(FlexSpan)`
   justify-content: flex-start;
+`;
+
+export const Event = styled(FlexSpan)`
+  justify-content: center;
 `;
 
 export const Details = styled(FlexSpan)`
@@ -137,6 +141,7 @@ export const Transactions = React.memo(
       return (
         <Payment key={key} style={style} className="px-2">
           <Payee>{t.payeeId}</Payee>
+          <Event>{t.event}</Event>
           <Details>
             <FontAwesomeIcon className="mx-1" icon={paymentTypeMap[t.paymentType]} />
             <Badge color="info">${parseFloat(t.paymentAmount.toString()).toFixed(2)}</Badge>
@@ -179,6 +184,7 @@ export const Transactions = React.memo(
               </TransactionsOverlay>
               <TransactionsHeading className="px-2 py-1">
                 <span>Payer</span>
+                <span>Event</span>
                 <span>Amount</span>
                 <span>Beneficiary</span>
               </TransactionsHeading>

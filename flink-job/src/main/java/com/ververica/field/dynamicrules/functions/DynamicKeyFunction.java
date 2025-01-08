@@ -27,10 +27,13 @@ import com.ververica.field.dynamicrules.Rule.ControlType;
 import com.ververica.field.dynamicrules.Rule.RuleState;
 import com.ververica.field.dynamicrules.RulesEvaluator.Descriptors;
 import com.ververica.field.dynamicrules.Transaction;
-import java.util.Iterator;
-import java.util.Map;
+
+import java.util.*;
 import java.util.Map.Entry;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.state.ReadOnlyBroadcastState;
 import org.apache.flink.configuration.Configuration;
@@ -48,32 +51,37 @@ public class DynamicKeyFunction
   @Override
   public void open(Configuration parameters) {
     ruleCounterGauge = new RuleCounterGauge();
-    getRuntimeContext().getMetricGroup().gauge("numberOfActiveRules", ruleCounterGauge);
+    getRuntimeContext().getMetricGroup().gauge("numberOfActiveRulesByEvent", ruleCounterGauge);
   }
 
   @Override
   public void processElement(
-      Transaction event, ReadOnlyContext ctx, Collector<Keyed<Transaction, String, Integer>> out)
+      Transaction transaction, ReadOnlyContext ctx, Collector<Keyed<Transaction, String, Integer>> out)
       throws Exception {
     ReadOnlyBroadcastState<Integer, Rule> rulesState =
         ctx.getBroadcastState(Descriptors.rulesDescriptor);
-    forkEventForEachGroupingKey(event, rulesState, out);
+    forkTransactionForEachGroupingKey(transaction, rulesState, out);
   }
 
-  private void forkEventForEachGroupingKey(
-      Transaction event,
+  private void forkTransactionForEachGroupingKey(
+      Transaction transaction,
       ReadOnlyBroadcastState<Integer, Rule> rulesState,
       Collector<Keyed<Transaction, String, Integer>> out)
       throws Exception {
-    int ruleCounter = 0;
+    List<Integer> ruleIds = new ArrayList<>();
     for (Map.Entry<Integer, Rule> entry : rulesState.immutableEntries()) {
       final Rule rule = entry.getValue();
-      out.collect(
-          new Keyed<>(
-              event, KeysExtractor.getKey(rule.getGroupingKeyNames(), event), rule.getRuleId()));
-      ruleCounter++;
+      if (rule.getEvents().contains(transaction.getEvent())) {
+        String key = KeysExtractor.getKey(rule.getGroupingKeyNames(), transaction);
+        if (StringUtils.isNotBlank(key)) {
+          out.collect(new Keyed<>(transaction, key, rule.getRuleId()));
+        }
+        ruleIds.add(rule.getRuleId());
+      }
     }
-    ruleCounterGauge.setValue(ruleCounter);
+    Map<String, List<Integer>> map = new HashMap<>();
+    map.put(transaction.getEvent(), ruleIds);
+    ruleCounterGauge.setValue(map);
   }
 
   @Override
@@ -102,17 +110,10 @@ public class DynamicKeyFunction
     }
   }
 
-  private static class RuleCounterGauge implements Gauge<Integer> {
+  @Data
+  private static class RuleCounterGauge implements Gauge<Map<String, List<Integer>>> {
 
-    private int value = 0;
+    private Map<String, List<Integer>> value = new HashMap<>();
 
-    public void setValue(int value) {
-      this.value = value;
-    }
-
-    @Override
-    public Integer getValue() {
-      return value;
-    }
   }
 }

@@ -40,6 +40,7 @@ const iconMap: {
   limit: faArrowUp,
   limitOperatorType: faLaptopCode,
   windowMinutes: faClock,
+  events: faFont
 };
 
 const seperator: {
@@ -88,6 +89,7 @@ const fields = [
   "aggregatorFunctionType",
   "aggregateFieldName",
   "groupingKeyNames",
+  "events",
   "limitOperatorType",
   "limit",
   "windowMinutes",
