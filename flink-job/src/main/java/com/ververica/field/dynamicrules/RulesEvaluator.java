@@ -23,7 +23,6 @@ import static com.ververica.field.config.Parameters.ENABLE_CHECKPOINTS;
 import static com.ververica.field.config.Parameters.LOCAL_EXECUTION;
 import static com.ververica.field.config.Parameters.MIN_PAUSE_BETWEEN_CHECKPOINTS;
 import static com.ververica.field.config.Parameters.OUT_OF_ORDERNESS;
-import static com.ververica.field.config.Parameters.RULES_SOURCE;
 import static com.ververica.field.config.Parameters.SOURCE_PARALLELISM;
 
 import com.ververica.field.config.Config;
@@ -57,7 +56,7 @@ import org.apache.flink.util.OutputTag;
 @Slf4j
 public class RulesEvaluator {
 
-  private Config config;
+  private final Config config;
 
   RulesEvaluator(Config config) {
     this.config = config;
@@ -65,15 +64,13 @@ public class RulesEvaluator {
 
   public void run() throws Exception {
 
-    RulesSource.Type rulesSourceType = getRulesSourceType();
-
     boolean isLocal = config.get(LOCAL_EXECUTION);
     boolean enableCheckpoints = config.get(ENABLE_CHECKPOINTS);
     int checkpointsInterval = config.get(CHECKPOINT_INTERVAL);
     int minPauseBtwnCheckpoints = config.get(CHECKPOINT_INTERVAL);
 
     // Environment setup
-    StreamExecutionEnvironment env = configureStreamExecutionEnvironment(rulesSourceType, isLocal);
+    StreamExecutionEnvironment env = configureStreamExecutionEnvironment(isLocal);
 
     if (enableCheckpoints) {
       env.enableCheckpointing(checkpointsInterval);
@@ -148,24 +145,15 @@ public class RulesEvaluator {
         new SimpleBoundedOutOfOrdernessTimestampExtractor<>(config.get(OUT_OF_ORDERNESS)));
   }
 
-  private DataStream<Rule> getRulesUpdateStream(StreamExecutionEnvironment env) throws IOException {
-
-    RulesSource.Type rulesSourceEnumType = getRulesSourceType();
-
+  private DataStream<Rule> getRulesUpdateStream(StreamExecutionEnvironment env) {
     DataStream<String> rulesStrings =
         RulesSource.initRulesSource(config, env)
-            .name(rulesSourceEnumType.getName())
+            .name("Rules Update Kafka Source")
             .setParallelism(1);
     return RulesSource.stringsStreamToRules(rulesStrings);
   }
 
-  private RulesSource.Type getRulesSourceType() {
-    String rulesSource = config.get(RULES_SOURCE);
-    return RulesSource.Type.valueOf(rulesSource.toUpperCase());
-  }
-
-  private StreamExecutionEnvironment configureStreamExecutionEnvironment(
-      RulesSource.Type rulesSourceEnumType, boolean isLocal) {
+  private StreamExecutionEnvironment configureStreamExecutionEnvironment(boolean isLocal) {
     Configuration flinkConfig = new Configuration();
     flinkConfig.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true);
 
@@ -179,7 +167,7 @@ public class RulesEvaluator {
     env.getCheckpointConfig()
         .setMinPauseBetweenCheckpoints(config.get(MIN_PAUSE_BETWEEN_CHECKPOINTS));
 
-    configureRestartStrategy(env, rulesSourceEnumType);
+    configureRestartStrategy(env);
     return env;
   }
 
@@ -196,18 +184,8 @@ public class RulesEvaluator {
     }
   }
 
-  private void configureRestartStrategy(
-      StreamExecutionEnvironment env, RulesSource.Type rulesSourceEnumType) {
-    switch (rulesSourceEnumType) {
-      case SOCKET:
-        env.setRestartStrategy(
-            RestartStrategies.fixedDelayRestart(
-                10, org.apache.flink.api.common.time.Time.of(10, TimeUnit.SECONDS)));
-        break;
-      case KAFKA:
-        // Default - unlimited restart strategy.
-        //        env.setRestartStrategy(RestartStrategies.noRestart());
-    }
+  private void configureRestartStrategy(StreamExecutionEnvironment env) {
+    env.setRestartStrategy(RestartStrategies.noRestart());
   }
 
   public static class Descriptors {

@@ -72,27 +72,11 @@ public class Parameters {
 
     public static final Param<String> OFFSET = Param.string("offset", "latest");
 
-  // GCP PubSub:
-  public static final Param<String> GCP_PROJECT_NAME = Param.string("gcp-project", "da-fe-212612");
-  public static final Param<String> GCP_PUBSUB_RULES_SUBSCRIPTION =
-      Param.string("pubsub-rules", "rules-demo");
-  public static final Param<String> GCP_PUBSUB_ALERTS_SUBSCRIPTION =
-      Param.string("pubsub-alerts", "alerts-demo");
-  public static final Param<String> GCP_PUBSUB_LATENCY_SUBSCRIPTION =
-      Param.string("pubsub-latency", "latency-demo");
-  public static final Param<String> GCP_PUBSUB_RULES_EXPORT_SUBSCRIPTION =
-      Param.string("pubsub-rules-export", "current-rules-demo");
-
-  // Socket
-  public static final Param<Integer> SOCKET_PORT = Param.integer("pubsub-rules-export", 9999);
-
-  // General:
-  //    source/sink types: kafka / pubsub / socket
-  public static final Param<String> RULES_SOURCE = Param.string("rules-source", "SOCKET");
-  public static final Param<String> TRANSACTIONS_SOURCE = Param.string("data-source", "GENERATOR");
-  public static final Param<String> ALERTS_SINK = Param.string("alerts-sink", "STDOUT");
-  public static final Param<String> LATENCY_SINK = Param.string("latency-sink", "STDOUT");
-  public static final Param<String> RULES_EXPORT_SINK = Param.string("rules-export-sink", "STDOUT");
+    // General:
+    public static final Param<String> TRANSACTIONS_SOURCE = Param.string("data-source", "GENERATOR");
+    public static final Param<String> ALERTS_SINK = Param.string("alerts-sink", "STDOUT");
+    public static final Param<String> LATENCY_SINK = Param.string("latency-sink", "STDOUT");
+    public static final Param<String> RULES_EXPORT_SINK = Param.string("rules-export-sink", "STDOUT");
 
     public static final Param<Integer> RECORDS_PER_SECOND = Param.integer("records-per-second", 2);
 
@@ -106,37 +90,28 @@ public class Parameters {
     public static final Param<Integer> MIN_PAUSE_BETWEEN_CHECKPOINTS = Param.integer("min-pause-btwn-checkpoints", 10000);
     public static final Param<Integer> OUT_OF_ORDERNESS = Param.integer("out-of-orderdness", 500);
 
-  //  List<Param> list = Arrays.asList(new String[]{"foo", "bar"});
+    public static final List<Param<String>> STRING_PARAMS = Arrays.asList(
+            KAFKA_HOST,
+            DATA_TOPIC,
+            ALERTS_TOPIC,
+            RULES_TOPIC,
+            LATENCY_TOPIC,
+            RULES_EXPORT_TOPIC,
+            OFFSET,
+            TRANSACTIONS_SOURCE,
+            ALERTS_SINK,
+            LATENCY_SINK,
+            RULES_EXPORT_SINK
+    );
 
-  public static final List<Param<String>> STRING_PARAMS =
-      Arrays.asList(
-          KAFKA_HOST,
-          DATA_TOPIC,
-          ALERTS_TOPIC,
-          RULES_TOPIC,
-          LATENCY_TOPIC,
-          RULES_EXPORT_TOPIC,
-          OFFSET,
-          GCP_PROJECT_NAME,
-          GCP_PUBSUB_RULES_SUBSCRIPTION,
-          GCP_PUBSUB_ALERTS_SUBSCRIPTION,
-          GCP_PUBSUB_LATENCY_SUBSCRIPTION,
-          GCP_PUBSUB_RULES_EXPORT_SUBSCRIPTION,
-          RULES_SOURCE,
-          TRANSACTIONS_SOURCE,
-          ALERTS_SINK,
-          LATENCY_SINK,
-          RULES_EXPORT_SINK);
-
-  public static final List<Param<Integer>> INT_PARAMS =
-      Arrays.asList(
-          KAFKA_PORT,
-          SOCKET_PORT,
-          RECORDS_PER_SECOND,
-          SOURCE_PARALLELISM,
-          CHECKPOINT_INTERVAL,
-          MIN_PAUSE_BETWEEN_CHECKPOINTS,
-          OUT_OF_ORDERNESS);
+    public static final List<Param<Integer>> INT_PARAMS = Arrays.asList(
+            KAFKA_PORT,
+            RECORDS_PER_SECOND,
+            SOURCE_PARALLELISM,
+            CHECKPOINT_INTERVAL,
+            MIN_PAUSE_BETWEEN_CHECKPOINTS,
+            OUT_OF_ORDERNESS
+    );
 
     public static final List<Param<Boolean>> BOOL_PARAMS = Arrays.asList(
             LOCAL_EXECUTION,
