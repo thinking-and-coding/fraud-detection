@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package com.ververica.field.dynamicrules;
+package com.ververica.field;
 
 import com.ververica.field.config.Config;
 import com.ververica.field.config.Parameters;
+import com.ververica.field.dynamicrules.RulesEvaluator;
 import org.apache.flink.api.java.utils.ParameterTool;
 
 
@@ -29,7 +30,7 @@ public class Main {
         ParameterTool tool = ParameterTool.fromArgs(args);
         Parameters inputParams = new Parameters(tool);
         Config config = Config.fromParameters(inputParams);
-        RulesEvaluator rulesEvaluator = new RulesEvaluator(config);
+        RulesEvaluator rulesEvaluator = RulesEvaluator.fromConfig(config);
         rulesEvaluator.run();
     }
 }

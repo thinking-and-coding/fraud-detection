@@ -48,7 +48,7 @@ ext {
 group = 'com.ververica.field.dynamicrules'
 version = '1.2'
 jar.archiveName = "${jar.baseName}-${version}-flink-${flinkVersion}.${jar.extension}"
-mainClassName = 'com.ververica.field.dynamicrules.Main'
+mainClassName = 'com.ververica.field.Main'
 description = """Dynamic Fraud Detection Demo"""
 
 sourceCompatibility = javaVersion

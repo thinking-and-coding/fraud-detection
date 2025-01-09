@@ -18,13 +18,6 @@
 
 package com.ververica.field.dynamicrules;
 
-import static com.ververica.field.config.Parameters.CHECKPOINT_INTERVAL;
-import static com.ververica.field.config.Parameters.ENABLE_CHECKPOINTS;
-import static com.ververica.field.config.Parameters.LOCAL_EXECUTION;
-import static com.ververica.field.config.Parameters.MIN_PAUSE_BETWEEN_CHECKPOINTS;
-import static com.ververica.field.config.Parameters.OUT_OF_ORDERNESS;
-import static com.ververica.field.config.Parameters.SOURCE_PARALLELISM;
-
 import com.ververica.field.config.Config;
 import com.ververica.field.dynamicrules.functions.AverageAggregate;
 import com.ververica.field.dynamicrules.functions.DynamicAlertFunction;
@@ -34,8 +27,6 @@ import com.ververica.field.dynamicrules.sinks.CurrentRulesSink;
 import com.ververica.field.dynamicrules.sinks.LatencySink;
 import com.ververica.field.dynamicrules.sources.RulesSource;
 import com.ververica.field.dynamicrules.sources.TransactionsSource;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -53,6 +44,10 @@ import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrderness
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.OutputTag;
 
+import java.util.concurrent.TimeUnit;
+
+import static com.ververica.field.config.Parameters.*;
+
 @Slf4j
 public class RulesEvaluator {
 
@@ -60,6 +55,10 @@ public class RulesEvaluator {
 
   RulesEvaluator(Config config) {
     this.config = config;
+  }
+
+  public static RulesEvaluator fromConfig(Config config) {
+    return new RulesEvaluator(config);
   }
 
   public void run() throws Exception {
