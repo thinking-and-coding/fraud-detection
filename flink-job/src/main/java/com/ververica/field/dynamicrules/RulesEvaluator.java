@@ -93,7 +93,7 @@ public class RulesEvaluator {
             .process(new DynamicKeyFunction())
             .uid("DynamicKeyFunction")
             .name("Dynamic Partitioning Function")
-            .keyBy((keyed) -> keyed.getKey())
+            .keyBy(keyed -> keyed.getKey())
             .connect(rulesStream)
             .process(new DynamicAlertFunction())
             .uid("DynamicAlertFunction")

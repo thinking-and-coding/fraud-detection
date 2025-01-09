@@ -47,6 +47,7 @@ public class RulesBootstrapper implements ApplicationRunner {
             + "\"limit\":\"20000000\","
             + "\"limitOperatorType\":\"GREATER\","
             + "\"ruleState\":\"ACTIVE\","
+            + "\"events\":[\"pay\",\"refund\"],"
             + "\"windowMinutes\":\"43200\"}";
 
     Rule rule1 = new Rule(payload1);
@@ -59,6 +60,7 @@ public class RulesBootstrapper implements ApplicationRunner {
             + "\"limit\":\"300\","
             + "\"limitOperatorType\":\"LESS\","
             + "\"ruleState\":\"PAUSE\","
+            + "\"events\":[\"pay\",\"refund\"],"
             + "\"windowMinutes\":\"1440\"}";
 
     Rule rule2 = new Rule(payload2);
@@ -71,6 +73,7 @@ public class RulesBootstrapper implements ApplicationRunner {
             + "\"limit\":\"10000000\","
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
             + "\"ruleState\":\"ACTIVE\","
+            + "\"events\":[\"pay\"],"
             + "\"windowMinutes\":\"1440\"}";
 
     Rule rule3 = new Rule(payload3);
@@ -83,6 +86,7 @@ public class RulesBootstrapper implements ApplicationRunner {
             + "\"limit\":\"100\","
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
             + "\"ruleState\":\"ACTIVE\","
+            + "\"events\":[\"refund\"],"
             + "\"windowMinutes\":\"1440\"}";
 
     Rule rule4 = new Rule(payload4);

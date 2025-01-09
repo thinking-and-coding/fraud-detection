@@ -37,6 +37,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Transaction implements TimestampAssignable<Long> {
   public long transactionId;
+  public String event;
   public long eventTime;
   public long payeeId;
   public long beneficiaryId;
@@ -71,7 +72,7 @@ public class Transaction implements TimestampAssignable<Long> {
 
   public static Transaction fromString(String line) {
     List<String> tokens = Arrays.asList(line.split(","));
-    int numArgs = 7;
+    int numArgs = 8;
     if (tokens.size() != numArgs) {
       throw new RuntimeException(
           "Invalid transaction: "
@@ -87,6 +88,7 @@ public class Transaction implements TimestampAssignable<Long> {
     try {
       Iterator<String> iter = tokens.iterator();
       transaction.transactionId = Long.parseLong(iter.next());
+      transaction.event = iter.next();
       transaction.eventTime =
           ZonedDateTime.parse(iter.next(), timeFormatter).toInstant().toEpochMilli();
       transaction.payeeId = Long.parseLong(iter.next());

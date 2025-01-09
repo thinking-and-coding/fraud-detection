@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
 public class RuleParser {
@@ -34,7 +36,7 @@ public class RuleParser {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   public Rule fromString(String line) throws IOException {
-    if (line.length() > 0 && '{' == line.charAt(0)) {
+    if (StringUtils.isNotBlank(line) && '{' == line.charAt(0)) {
       return parseJson(line);
     } else {
       return parsePlain(line);
@@ -47,7 +49,7 @@ public class RuleParser {
 
   private static Rule parsePlain(String ruleString) throws IOException {
     List<String> tokens = Arrays.asList(ruleString.split(","));
-    if (tokens.size() != 9) {
+    if (tokens.size() != 10) {
       throw new IOException("Invalid rule (wrong number of tokens): " + ruleString);
     }
 
@@ -56,6 +58,7 @@ public class RuleParser {
 
     rule.setRuleId(Integer.parseInt(stripBrackets(iter.next())));
     rule.setRuleState(RuleState.valueOf(stripBrackets(iter.next()).toUpperCase()));
+    rule.setEvents(getNames(iter.next()));
     rule.setGroupingKeyNames(getNames(iter.next()));
     rule.setUnique(getNames(iter.next()));
     rule.setAggregateFieldName(stripBrackets(iter.next()));
@@ -74,7 +77,7 @@ public class RuleParser {
 
   private static List<String> getNames(String expression) {
     String keyNamesString = expression.replaceAll("[()]", "");
-    if (!"".equals(keyNamesString)) {
+    if (StringUtils.isNotBlank(keyNamesString)) {
       String[] tokens = keyNamesString.split("&", -1);
       return Arrays.asList(tokens);
     } else {

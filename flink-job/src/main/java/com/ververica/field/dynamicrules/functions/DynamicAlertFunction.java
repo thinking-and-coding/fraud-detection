@@ -56,13 +56,13 @@ public class DynamicAlertFunction
   private static final String COUNT = "COUNT_FLINK";
   private static final String COUNT_WITH_RESET = "COUNT_WITH_RESET_FLINK";
 
-  private static int WIDEST_RULE_KEY = Integer.MIN_VALUE;
-  private static int CLEAR_STATE_COMMAND_KEY = Integer.MIN_VALUE + 1;
+  private static final int WIDEST_RULE_KEY = Integer.MIN_VALUE;
+  private static final int CLEAR_STATE_COMMAND_KEY = Integer.MIN_VALUE + 1;
 
   private transient MapState<Long, Set<Transaction>> windowState;
   private Meter alertMeter;
 
-  private MapStateDescriptor<Long, Set<Transaction>> windowStateDescriptor =
+  private final MapStateDescriptor<Long, Set<Transaction>> windowStateDescriptor =
       new MapStateDescriptor<>(
           "windowState",
           BasicTypeInfo.LONG_TYPE_INFO,
@@ -74,19 +74,19 @@ public class DynamicAlertFunction
     windowState = getRuntimeContext().getMapState(windowStateDescriptor);
 
     alertMeter = new MeterView(60);
-    getRuntimeContext().getMetricGroup().meter("alertsPerSecond", alertMeter);
+    getRuntimeContext().getMetricGroup().meter("alertsPerMin", alertMeter);
   }
 
   @Override
   public void processElement(
       Keyed<Transaction, String, Integer> value, ReadOnlyContext ctx, Collector<Alert> out)
       throws Exception {
+    Transaction transaction = value.getWrapped();
+    long currentEventTime = transaction.getEventTime();
 
-    long currentEventTime = value.getWrapped().getEventTime();
+    addToStateValuesSet(windowState, currentEventTime, transaction);
 
-    addToStateValuesSet(windowState, currentEventTime, value.getWrapped());
-
-    long ingestionTime = value.getWrapped().getIngestionTimestamp();
+    long ingestionTime = transaction.getIngestionTimestamp();
     ctx.output(Descriptors.latencySinkTag, System.currentTimeMillis() - ingestionTime);
 
     Rule rule = ctx.getBroadcastState(Descriptors.rulesDescriptor).get(value.getId());
@@ -178,19 +178,16 @@ public class DynamicAlertFunction
     return stateEventTime >= windowStartForEvent && stateEventTime <= currentEventTime;
   }
 
-  private void aggregateValuesInState(
-      Long stateEventTime, SimpleAccumulator<BigDecimal> aggregator, Rule rule) throws Exception {
+  private void aggregateValuesInState(Long stateEventTime, SimpleAccumulator<BigDecimal> aggregator, Rule rule) throws Exception {
     Set<Transaction> inWindow = windowState.get(stateEventTime);
-    if (COUNT.equals(rule.getAggregateFieldName())
-        || COUNT_WITH_RESET.equals(rule.getAggregateFieldName())) {
-      for (Transaction event : inWindow) {
-        aggregator.add(BigDecimal.ONE);
-      }
-    } else {
-      for (Transaction event : inWindow) {
-        BigDecimal aggregatedValue =
-            FieldsExtractor.getBigDecimalByName(rule.getAggregateFieldName(), event);
-        aggregator.add(aggregatedValue);
+    for (Transaction transaction : inWindow) {
+      if (rule.getEvents().contains(transaction.getEvent())) {
+        if (COUNT.equals(rule.getAggregateFieldName()) || COUNT_WITH_RESET.equals(rule.getAggregateFieldName())) {
+          aggregator.add(BigDecimal.ONE);
+        } else {
+          BigDecimal aggregatedValue = FieldsExtractor.getBigDecimalByName(rule.getAggregateFieldName(), transaction);
+          aggregator.add(aggregatedValue);
+        }
       }
     }
   }

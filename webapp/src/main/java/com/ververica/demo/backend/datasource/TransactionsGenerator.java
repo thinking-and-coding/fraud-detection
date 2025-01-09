@@ -51,6 +51,7 @@ public class TransactionsGenerator implements Runnable {
 
   protected Transaction randomEvent(SplittableRandom rnd) {
     long transactionId = rnd.nextLong(Long.MAX_VALUE);
+    String event = rnd.nextInt(0, 2) > 0 ? "pay" : "refund";
     long payeeId = rnd.nextLong(MAX_PAYEE_ID);
     long beneficiaryId = rnd.nextLong(MAX_BENEFICIARY_ID);
     double paymentAmountDouble =
@@ -59,13 +60,14 @@ public class TransactionsGenerator implements Runnable {
     BigDecimal paymentAmount = BigDecimal.valueOf(paymentAmountDouble);
 
     return Transaction.builder()
-        .transactionId(transactionId)
-        .payeeId(payeeId)
-        .beneficiaryId(beneficiaryId)
-        .paymentAmount(paymentAmount)
-        .paymentType(paymentType(transactionId))
-        .eventTime(System.currentTimeMillis())
-        .build();
+            .transactionId(transactionId)
+            .event(event)
+            .payeeId(payeeId)
+            .beneficiaryId(beneficiaryId)
+            .paymentAmount(paymentAmount)
+            .paymentType(paymentType(transactionId))
+            .eventTime(System.currentTimeMillis())
+            .build();
   }
 
   public Transaction generateOne() {

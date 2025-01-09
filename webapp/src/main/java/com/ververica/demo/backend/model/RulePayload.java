@@ -33,6 +33,7 @@ public class RulePayload {
 
   private Integer ruleId;
   private RuleState ruleState;
+  private List<String> events;
   private List<String> groupingKeyNames; // aggregation
   private List<String> unique;
   private String aggregateFieldName;

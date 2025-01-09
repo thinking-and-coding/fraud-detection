@@ -44,8 +44,8 @@ public class RulesEvaluatorTest {
   public void shouldProduceKeyedOutput() throws Exception {
     RuleParser ruleParser = new RuleParser();
     Rule rule1 =
-        ruleParser.fromString("1,(active),(paymentType&payeeId),,(totalFare),(SUM),(>),(50),(20)");
-    Transaction event1 = Transaction.fromString("1,2013-01-01 00:00:00,1001,1002,CSH,21.5,1");
+        ruleParser.fromString("1,(active),(pay&refund),(paymentType&payeeId),,(totalFare),(SUM),(>),(50),(20)");
+    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,21.5,1");
 
     try (BroadcastStreamNonKeyedOperatorTestHarness<
             Transaction, Rule, Keyed<Transaction, String, Integer>>
@@ -68,7 +68,7 @@ public class RulesEvaluatorTest {
   @Test
   public void shouldStoreRulesInBroadcastStateDuringDynamicKeying() throws Exception {
     RuleParser ruleParser = new RuleParser();
-    Rule rule1 = ruleParser.fromString("1,(active),(paymentType),,(totalFare),(SUM),(>),(50),(20)");
+    Rule rule1 = ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(totalFare),(SUM),(>),(50),(20)");
 
     try (BroadcastStreamNonKeyedOperatorTestHarness<
             Transaction, Rule, Keyed<Transaction, String, Integer>>
@@ -91,12 +91,13 @@ public class RulesEvaluatorTest {
   @Test
   public void shouldOutputSimplestAlert() throws Exception {
     RuleParser ruleParser = new RuleParser();
+    // pay & refund events
     Rule rule1 =
-        ruleParser.fromString("1,(active),(paymentType),,(paymentAmount),(SUM),(>),(20),(20)");
+        ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(paymentAmount),(SUM),(>),(20),(20)");
 
-    Transaction event1 = Transaction.fromString("1,2013-01-01 00:00:00,1001,1002,CSH,22,1");
-    Transaction event2 = Transaction.fromString("2,2013-01-01 00:00:01,1001,1002,CRD,19,1");
-    Transaction event3 = Transaction.fromString("3,2013-01-01 00:00:02,1001,1002,CRD,2,1");
+    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,22,1");
+    Transaction event2 = Transaction.fromString("2,refund,2013-01-01 00:00:01,1001,1002,CRD,19,1");
+    Transaction event3 = Transaction.fromString("3,pay,2013-01-01 00:00:02,1001,1002,CRD,2,1");
 
     Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
     Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CRD", 1);
@@ -107,7 +108,7 @@ public class RulesEvaluatorTest {
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
-                in -> (in.getKey()),
+                    Keyed::getKey,
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
                 Descriptors.rulesDescriptor)) {
@@ -133,14 +134,52 @@ public class RulesEvaluatorTest {
   }
 
   @Test
+  public void shouldOutputSimplestPayEventAlert() throws Exception {
+    RuleParser ruleParser = new RuleParser();
+    // pay events
+    Rule rule1 = ruleParser.fromString("1,(active),(pay),(paymentType),,(paymentAmount),(SUM),(=),(24),(20)");
+    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,22,1");
+    Transaction event2 = Transaction.fromString("2,refund,2013-01-01 00:00:01,1001,1002,CRD,19,1");
+    Transaction event3 = Transaction.fromString("3,pay,2013-01-01 00:00:02,1001,1002,CSH,2,1");
+
+    Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
+    Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CRD", 1);
+    Keyed<Transaction, String, Integer> keyed3 = new Keyed<>(event3, "CSH", 1);
+    try (BroadcastStreamKeyedOperatorTestHarness<
+            String, Keyed<Transaction, String, Integer>, Rule, Alert>
+                 testHarness =
+                 BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
+                         new DynamicAlertFunction(),
+                         keyed -> keyed.getKey(),
+                         null,
+                         BasicTypeInfo.STRING_TYPE_INFO,
+                         Descriptors.rulesDescriptor)) {
+      testHarness.processElement2(new StreamRecord<>(rule1, 12L));
+
+      testHarness.processElement1(new StreamRecord<>(keyed1, 15L));
+      testHarness.processElement1(new StreamRecord<>(keyed2, 16L));
+      testHarness.processElement1(new StreamRecord<>(keyed3, 17L));
+
+      ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
+      Alert<Transaction, BigDecimal> alert1 =
+              new Alert<>(rule1.getRuleId(), rule1, "CSH", event3, BigDecimal.valueOf(24));
+
+      expectedOutput.add(new StreamRecord<>(alert1, 17L));
+
+      TestHarnessUtil.assertOutputEquals(
+              "Output was not correct.", expectedOutput, testHarness.getOutput());
+    }
+  }
+
+  @Test
   public void shouldHandleSameTimestampEventsCorrectly() throws Exception {
     RuleParser ruleParser = new RuleParser();
     Rule rule1 =
-        ruleParser.fromString("1,(active),(paymentType),,(paymentAmount),(SUM),(>),(20),(20)");
+        ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(paymentAmount),(SUM),(>),(20),(20)");
 
-    Transaction event1 = Transaction.fromString("1,2013-01-01 00:00:00,1001,1002,CSH,19,1");
+    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,19,1");
 
-    Transaction event2 = Transaction.fromString("2,2013-01-01 00:00:00,1002,1003,CSH,2,1");
+    Transaction event2 = Transaction.fromString("2,refund,2013-01-01 00:00:00,1002,1003,CSH,2,1");
 
     Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
     Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CSH", 1);
@@ -150,7 +189,7 @@ public class RulesEvaluatorTest {
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
-                in -> (in.getKey()),
+                    keyed -> keyed.getKey(),
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
                 Descriptors.rulesDescriptor)) {
@@ -175,15 +214,15 @@ public class RulesEvaluatorTest {
   public void shouldCleanupStateBasedOnWatermarks() throws Exception {
     RuleParser ruleParser = new RuleParser();
     Rule rule1 =
-        ruleParser.fromString("1,(active),(paymentType),,(paymentAmount),(SUM),(>),(10),(4)");
+        ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(paymentAmount),(SUM),(>),(10),(4)");
 
-    Transaction event1 = Transaction.fromString("1,2013-01-01 00:01:00,1001,1002,CSH,3,1");
+    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:01:00,1001,1002,CSH,3,1");
 
-    Transaction event2 = Transaction.fromString("2,2013-01-01 00:02:00,1003,1004,CSH,3,1");
+    Transaction event2 = Transaction.fromString("2,pay,2013-01-01 00:02:00,1003,1004,CSH,3,1");
 
-    Transaction event3 = Transaction.fromString("3,2013-01-01 00:03:00,1005,1006,CSH,5,1");
+    Transaction event3 = Transaction.fromString("3,refund,2013-01-01 00:03:00,1005,1006,CSH,5,1");
 
-    Transaction event4 = Transaction.fromString("4,2013-01-01 00:06:00,1007,1008,CSH,3,1");
+    Transaction event4 = Transaction.fromString("4,refund,2013-01-01 00:06:00,1007,1008,CSH,3,1");
 
     Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
     Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CSH", 1);
@@ -195,13 +234,13 @@ public class RulesEvaluatorTest {
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
-                in -> (in.getKey()),
+                    keyed -> keyed.getKey(),
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
                 Descriptors.rulesDescriptor)) {
 
       //      long halfAMinuteMillis = 30 * 1000l;
-      long watermarkDelay = 2 * 60 * 1000l;
+      long watermarkDelay = 2 * 60 * 1000L;
 
       testHarness.processElement2(new StreamRecord<>(rule1, 1L));
 
