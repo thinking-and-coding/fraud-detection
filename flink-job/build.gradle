@@ -53,7 +53,7 @@ description = """Dynamic Fraud Detection Demo"""
 
 sourceCompatibility = javaVersion
 targetCompatibility = javaVersion
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
@@ -155,7 +155,7 @@ shadowJar {
     archiveName = "${jar.baseName}-${version}-flink-${flinkVersion}-deploy.${jar.extension}"
 }
 
-task resolveDependencies {
+tasks.register('resolveDependencies') {
     doLast {
         project.rootProject.allprojects.each { subProject ->
             subProject.buildscript.configurations.each { configuration ->
