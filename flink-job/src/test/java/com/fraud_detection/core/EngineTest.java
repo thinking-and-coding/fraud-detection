@@ -18,7 +18,6 @@
 
 package com.fraud_detection.core;
 
-import com.fraud_detection.core.Engine.Descriptors;
 import com.fraud_detection.core.entity.Alert;
 import com.fraud_detection.core.entity.Keyed;
 import com.fraud_detection.core.entity.Rule;
@@ -28,13 +27,6 @@ import com.fraud_detection.core.functions.DynamicKeyFunction;
 import com.fraud_detection.core.util.AssertUtils;
 import com.fraud_detection.core.util.BroadcastStreamKeyedOperatorTestHarness;
 import com.fraud_detection.core.util.BroadcastStreamNonKeyedOperatorTestHarness;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import com.fraud_detection.core.utils.RuleParser;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -42,6 +34,13 @@ import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.util.TestHarnessUtil;
 import org.junit.Test;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /** Tests for the {@link Engine}. */
 public class EngineTest {

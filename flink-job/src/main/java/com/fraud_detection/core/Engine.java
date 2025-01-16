@@ -22,19 +22,17 @@ import com.fraud_detection.config.Config;
 import com.fraud_detection.core.entity.Alert;
 import com.fraud_detection.core.entity.Rule;
 import com.fraud_detection.core.entity.Transaction;
-import com.fraud_detection.core.operators.AverageAggregate;
 import com.fraud_detection.core.functions.DynamicAlertFunction;
 import com.fraud_detection.core.functions.DynamicKeyFunction;
+import com.fraud_detection.core.operators.AverageAggregate;
 import com.fraud_detection.sinks.AlertsSink;
 import com.fraud_detection.sinks.CurrentRulesSink;
 import com.fraud_detection.sinks.LatencySink;
 import com.fraud_detection.sources.RulesSource;
 import com.fraud_detection.sources.TransactionsSource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
-import org.apache.flink.api.common.state.MapStateDescriptor;
-import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -43,11 +41,9 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.util.OutputTag;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import static com.fraud_detection.config.Parameters.*;
 
@@ -65,20 +61,8 @@ public class Engine {
   }
 
   public void startDetect() throws Exception {
-
-    boolean isLocal = config.get(LOCAL_EXECUTION);
-    boolean enableCheckpoints = config.get(ENABLE_CHECKPOINTS);
-    int checkpointsInterval = config.get(CHECKPOINT_INTERVAL);
-    int minPauseBtwnCheckpoints = config.get(CHECKPOINT_INTERVAL);
-
     // Environment setup
-    StreamExecutionEnvironment env = configureStreamExecutionEnvironment(isLocal);
-
-    if (enableCheckpoints) {
-      env.enableCheckpointing(checkpointsInterval);
-      env.getCheckpointConfig().setMinPauseBetweenCheckpoints(minPauseBtwnCheckpoints);
-    }
-
+    StreamExecutionEnvironment env = configureStreamExecutionEnvironment();
     // Streams setup
     DataStream<Rule> rulesUpdateStream = getRulesUpdateStream(env);
     DataStream<Transaction> transactions = getTransactionsStream(env);
@@ -86,7 +70,7 @@ public class Engine {
     BroadcastStream<Rule> rulesStream = rulesUpdateStream.broadcast(Descriptors.rulesDescriptor);
 
     // Processing pipeline setup
-    DataStream<Alert> alerts =
+    SingleOutputStreamOperator<Alert> alerts =
         transactions
             .connect(rulesStream)
             .process(new DynamicKeyFunction())
@@ -99,13 +83,13 @@ public class Engine {
             .name("Dynamic Rule Evaluation Function");
 
     DataStream<String> allRuleEvaluations =
-        ((SingleOutputStreamOperator<Alert>) alerts).getSideOutput(Descriptors.demoSinkTag);
+        alerts.getSideOutput(Descriptors.demoSinkTag);
 
     DataStream<Long> latency =
-        ((SingleOutputStreamOperator<Alert>) alerts).getSideOutput(Descriptors.latencySinkTag);
+        alerts.getSideOutput(Descriptors.latencySinkTag);
 
     DataStream<Rule> currentRules =
-        ((SingleOutputStreamOperator<Alert>) alerts).getSideOutput(Descriptors.currentRulesSinkTag);
+        alerts.getSideOutput(Descriptors.currentRulesSinkTag);
 
     alerts.print().name("Alert STDOUT Sink");
     allRuleEvaluations.print().setParallelism(1).name("Rule Evaluation Sink");
@@ -143,8 +127,9 @@ public class Engine {
             .setParallelism(sourceParallelism);
     DataStream<Transaction> transactionsStream =
         TransactionsSource.stringsStreamToTransactions(transactionsStringsStream);
-    return transactionsStream.assignTimestampsAndWatermarks(
-        new SimpleBoundedOutOfOrdernessTimestampExtractor<>(config.get(OUT_OF_ORDERNESS)));
+    return transactionsStream.assignTimestampsAndWatermarks(WatermarkStrategy
+            .<Transaction>forBoundedOutOfOrderness(Duration.ofMillis(config.get(OUT_OF_ORDERNESS)))
+            .withTimestampAssigner((transaction, timestamp) -> transaction.getEventTime()));
   }
 
   private DataStream<Rule> getRulesUpdateStream(StreamExecutionEnvironment env) {
@@ -155,7 +140,12 @@ public class Engine {
     return RulesSource.stringsStreamToRules(rulesStrings);
   }
 
-  private StreamExecutionEnvironment configureStreamExecutionEnvironment(boolean isLocal) {
+  private StreamExecutionEnvironment configureStreamExecutionEnvironment() {
+    boolean isLocal = config.get(LOCAL_EXECUTION);
+    boolean enableCheckpoints = config.get(ENABLE_CHECKPOINTS);
+    int checkpointsInterval = config.get(CHECKPOINT_INTERVAL);
+    int minPauseBtwnCheckpoints = config.get(CHECKPOINT_INTERVAL);
+
     Configuration flinkConfig = new Configuration();
     flinkConfig.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER, true);
 
@@ -168,36 +158,14 @@ public class Engine {
     env.getCheckpointConfig().setCheckpointInterval(config.get(CHECKPOINT_INTERVAL));
     env.getCheckpointConfig()
         .setMinPauseBetweenCheckpoints(config.get(MIN_PAUSE_BETWEEN_CHECKPOINTS));
+    // restartStrategy
+    env.setRestartStrategy(RestartStrategies.noRestart());
 
-    configureRestartStrategy(env);
+    if (enableCheckpoints) {
+      env.enableCheckpointing(checkpointsInterval);
+      env.getCheckpointConfig().setMinPauseBetweenCheckpoints(minPauseBtwnCheckpoints);
+    }
     return env;
   }
 
-  private static class SimpleBoundedOutOfOrdernessTimestampExtractor<T extends Transaction>
-      extends BoundedOutOfOrdernessTimestampExtractor<T> {
-
-    public SimpleBoundedOutOfOrdernessTimestampExtractor(int outOfOrderdnessMillis) {
-      super(Time.of(outOfOrderdnessMillis, TimeUnit.MILLISECONDS));
-    }
-
-    @Override
-    public long extractTimestamp(T element) {
-      return element.getEventTime();
-    }
-  }
-
-  private void configureRestartStrategy(StreamExecutionEnvironment env) {
-    env.setRestartStrategy(RestartStrategies.noRestart());
-  }
-
-  public static class Descriptors {
-    public static final MapStateDescriptor<Integer, Rule> rulesDescriptor =
-        new MapStateDescriptor<>(
-            "rules", BasicTypeInfo.INT_TYPE_INFO, TypeInformation.of(Rule.class));
-
-    public static final OutputTag<String> demoSinkTag = new OutputTag<String>("demo-sink") {};
-    public static final OutputTag<Long> latencySinkTag = new OutputTag<Long>("latency-sink") {};
-    public static final OutputTag<Rule> currentRulesSinkTag =
-        new OutputTag<Rule>("current-rules-sink") {};
-  }
 }

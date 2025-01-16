@@ -19,7 +19,7 @@
 package com.fraud_detection.core.functions;
 
 
-import com.fraud_detection.core.Engine.Descriptors;
+import com.fraud_detection.core.Descriptors;
 import com.fraud_detection.core.entity.Keyed;
 import com.fraud_detection.core.entity.Rule;
 import com.fraud_detection.core.entity.enums.ControlType;
