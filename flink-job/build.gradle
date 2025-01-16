@@ -30,7 +30,7 @@ plugins {
     id 'application'
     // shadow plugin to produce fat JARs
     id 'com.github.johnrengelman.shadow' version '7.0.0'
-    id "com.github.sherter.google-java-format" version "0.9"
+    //id "com.github.sherter.google-java-format" version "0.9"
 }
 
 ext {
@@ -45,10 +45,10 @@ ext {
 }
 
 // artifact properties
-group = 'com.ververica.field.dynamicrules'
+group = 'com.fraud_detection.dynamicrules'
 version = '1.2'
 jar.archiveName = "${jar.baseName}-${version}-flink-${flinkVersion}.${jar.extension}"
-mainClassName = 'com.ververica.field.Main'
+mainClassName = 'com.fraud_detection.Main'
 description = """Dynamic Fraud Detection Demo"""
 
 sourceCompatibility = javaVersion
