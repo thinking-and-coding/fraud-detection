@@ -36,7 +36,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Event {
   public long eventId;
-  public String event;
+  public String eventName;
   public long eventTime;
   public long payeeId;
   public long beneficiaryId;
@@ -73,7 +73,7 @@ public class Event {
     int numArgs = 7;
     if (tokens.size() != numArgs) {
       throw new RuntimeException(
-          "Invalid event: "
+          "Invalid eventName: "
               + line
               + ". Required number of arguments: "
               + numArgs
@@ -86,7 +86,7 @@ public class Event {
     try {
       Iterator<String> iter = tokens.iterator();
       event.eventId = Long.parseLong(iter.next());
-      event.event = iter.next();
+      event.eventName = iter.next();
       event.eventTime =
           ZonedDateTime.parse(iter.next(), timeFormatter).toInstant().toEpochMilli();
       event.payeeId = Long.parseLong(iter.next());

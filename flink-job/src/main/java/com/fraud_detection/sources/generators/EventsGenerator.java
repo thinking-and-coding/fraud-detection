@@ -40,6 +40,7 @@ public class EventsGenerator extends BaseGenerator<Event> {
   @Override
   public Event randomEvent(SplittableRandom rnd, long id) {
     long eventId = rnd.nextLong(Long.MAX_VALUE);
+    String eventName = rnd.nextInt(0, 2) > 0 ? "pay" : "refund";
     long payeeId = rnd.nextLong(MAX_PAYEE_ID);
     long beneficiaryId = rnd.nextLong(MAX_BENEFICIARY_ID);
     double paymentAmountDouble =
@@ -50,6 +51,7 @@ public class EventsGenerator extends BaseGenerator<Event> {
     Event event =
         Event.builder()
             .eventId(eventId)
+            .eventName(eventName)
             .payeeId(payeeId)
             .beneficiaryId(beneficiaryId)
             .paymentAmount(paymentAmount)

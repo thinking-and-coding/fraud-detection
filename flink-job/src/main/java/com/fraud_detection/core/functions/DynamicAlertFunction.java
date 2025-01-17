@@ -170,7 +170,7 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
     private void aggregateValuesInState(Long stateEventTime, SimpleAccumulator<BigDecimal> aggregator, Strategy strategy) throws Exception {
         Set<Event> inWindow = windowState.get(stateEventTime);
         for (Event event : inWindow) {
-            if (strategy.getEvents().contains(event.getEvent())) {
+            if (strategy.getEvents().contains(event.getEventName())) {
                 if (COUNT.equals(strategy.getAggregateFieldName()) || COUNT_WITH_RESET.equals(strategy.getAggregateFieldName())) {
                     aggregator.add(BigDecimal.ONE);
                 } else {

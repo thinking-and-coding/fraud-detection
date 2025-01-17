@@ -10,7 +10,7 @@
 
 export interface Event {
   beneficiaryId: number;
-  event: string;
+  eventName: string;
   eventTime: number;
   payeeId: number;
   paymentAmount: number;

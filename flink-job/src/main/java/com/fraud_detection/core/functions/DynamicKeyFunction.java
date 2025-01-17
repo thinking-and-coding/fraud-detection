@@ -64,7 +64,7 @@ public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy
         List<Integer> strategyIds = new ArrayList<>();
         for (Map.Entry<Integer, Strategy> entry : strategiesState.immutableEntries()) {
             final Strategy strategy = entry.getValue();
-            if (strategy.getEvents().contains(event.getEvent())) {
+            if (strategy.getEvents().contains(event.getEventName())) {
                 String key = KeysExtractor.getKey(strategy.getGroupingKeyNames(), event);
                 if (StringUtils.isNotBlank(key)) {
                     out.collect(new Keyed<>(event, key, strategy.getStrategyId()));
@@ -73,7 +73,7 @@ public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy
             }
         }
         Map<String, List<Integer>> map = new HashMap<>();
-        map.put(event.getEvent(), strategyIds);
+        map.put(event.getEventName(), strategyIds);
         strategyCounterGauge.setValue(map);
     }
 

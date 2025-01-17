@@ -51,7 +51,7 @@ public class EventsGenerator implements Runnable {
 
   protected Event randomEvent(SplittableRandom rnd) {
     long eventId = rnd.nextLong(Long.MAX_VALUE);
-    String event = rnd.nextInt(0, 2) > 0 ? "pay" : "refund";
+    String eventName = rnd.nextInt(0, 2) > 0 ? "pay" : "refund";
     long payeeId = rnd.nextLong(MAX_PAYEE_ID);
     long beneficiaryId = rnd.nextLong(MAX_BENEFICIARY_ID);
     double paymentAmountDouble =
@@ -61,7 +61,7 @@ public class EventsGenerator implements Runnable {
 
     return Event.builder()
             .eventId(eventId)
-            .event(event)
+            .eventName(eventName)
             .payeeId(payeeId)
             .beneficiaryId(beneficiaryId)
             .paymentAmount(paymentAmount)

@@ -34,4 +34,4 @@ strategy, (strategy_state), (events), (aggregation keys), (aggregateFieldName fi
 --data-source kafka --strategies-source kafka --alerts-sink kafka --strategies-export-sink kafka
 
 ##### Special functions:
-1,(active),(event),(paymentType),,(COUNT_FLINK),(SUM),(>),(50),(20)
+1,(active),(eventName),(paymentType),,(COUNT_FLINK),(SUM),(>),(50),(20)

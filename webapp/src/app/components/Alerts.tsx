@@ -72,7 +72,7 @@ export const Alerts: FC<Props> = props => {
                     <td colSpan={2} className="p-0" style={{ borderBottomWidth: 3 }}>
                       <Payment className="px-2">
                         <Payee>{t.payeeId}</Payee>
-                        <EventName>{t.event}</EventName>
+                        <EventName>{t.eventName}</EventName>
                         <Details>
                           <FontAwesomeIcon className="mx-1" icon={paymentTypeMap[t.paymentType]} />
                           <Badge color="info">${parseFloat(t.paymentAmount.toString()).toFixed(2)}</Badge>

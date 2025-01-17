@@ -141,7 +141,7 @@ export const Events = React.memo(
       return (
         <Payment key={key} style={style} className="px-2">
           <Payee>{t.payeeId}</Payee>
-          <EventName>{t.event}</EventName>
+          <EventName>{t.eventName}</EventName>
           <Details>
             <FontAwesomeIcon className="mx-1" icon={paymentTypeMap[t.paymentType]} />
             <Badge color="info">${parseFloat(t.paymentAmount.toString()).toFixed(2)}</Badge>
