@@ -2,8 +2,8 @@ import logoImage from "app/assets/flink_squirrel_200_color.png";
 import React, { FC, useState, Dispatch, SetStateAction } from "react";
 import { Button, ButtonGroup, Col, Navbar, NavbarBrand } from "reactstrap";
 import styled from "styled-components/macro";
-import { AddRuleModal } from "./AddRuleModal";
-import { Rule } from "app/interfaces";
+import { AddStrategyModal } from "./AddStrategyModal";
+import { Strategy } from "app/interfaces";
 
 const AppNavbar = styled(Navbar)`
   && {
@@ -17,7 +17,7 @@ const Logo = styled.img`
   max-height: 40px;
 `;
 
-const TransactionsCol = styled(Col)`
+const EventsCol = styled(Col)`
   border-right: 1px solid rgba(255, 255, 255, 0.125);
   display: flex;
   align-items: center;
@@ -27,39 +27,39 @@ const TransactionsCol = styled(Col)`
 
 export const Header: FC<Props> = props => {
   const [modalOpen, setModalOpen] = useState(false);
-  const openRuleModal = () => setModalOpen(true);
-  const closeRuleModal = () => setModalOpen(false);
-  const toggleRuleModal = () => setModalOpen(state => !state);
+  const openStrategyModal = () => setModalOpen(true);
+  const closeStrategyModal = () => setModalOpen(false);
+  const toggleStrategyModal = () => setModalOpen(state => !state);
 
-  const startTransactions = () => fetch("/api/startTransactionsGeneration").then();
-  const stopTransactions = () => fetch("/api/stopTransactionsGeneration").then();
+  const startEvents = () => fetch("/api/startEventsGeneration").then();
+  const stopEvents = () => fetch("/api/stopEventsGeneration").then();
 
-  const syncRules = () => fetch("/api/syncRules").then();
+  const syncStrategies = () => fetch("/api/syncStrategies").then();
   const clearState = () => fetch("/api/clearState").then();
-  const pushToFlink = () => fetch("/api/rules/pushToFlink").then();
+  const pushToFlink = () => fetch("/api/strategies/pushToFlink").then();
 
   return (
     <>
       <AppNavbar color="dark" dark={true}>
-        <TransactionsCol xs="2">
-          <NavbarBrand tag="div">Live Transactions</NavbarBrand>
+        <EventsCol xs="2">
+          <NavbarBrand tag="div">Live Events</NavbarBrand>
           <ButtonGroup size="sm">
-            <Button color="success" onClick={startTransactions}>
+            <Button color="success" onClick={startEvents}>
               Start
             </Button>
-            <Button color="danger" onClick={stopTransactions}>
+            <Button color="danger" onClick={stopEvents}>
               Stop
             </Button>
           </ButtonGroup>
-        </TransactionsCol>
+        </EventsCol>
 
         <Col xs={{ size: 5, offset: 1 }}>
-          <Button size="sm" color="primary" onClick={openRuleModal}>
-            Add Rule
+          <Button size="sm" color="primary" onClick={openStrategyModal}>
+            Add Strategy
           </Button>
 
-          <Button size="sm" color="warning" onClick={syncRules}>
-            Sync Rules
+          <Button size="sm" color="warning" onClick={syncStrategies}>
+            Sync Strategies
           </Button>
 
           <Button size="sm" color="warning" onClick={clearState}>
@@ -76,11 +76,11 @@ export const Header: FC<Props> = props => {
           <Logo src={logoImage} title="Apache Flink" />
         </Col>
       </AppNavbar>
-      <AddRuleModal isOpen={modalOpen} toggle={toggleRuleModal} onClosed={closeRuleModal} setRules={props.setRules} />
+      <AddStrategyModal isOpen={modalOpen} toggle={toggleStrategyModal} onClosed={closeStrategyModal} setStrategies={props.setStrategies} />
     </>
   );
 };
 
 interface Props {
-  setRules: Dispatch<SetStateAction<Rule[]>>;
+  setStrategies: Dispatch<SetStateAction<Strategy[]>>;
 }

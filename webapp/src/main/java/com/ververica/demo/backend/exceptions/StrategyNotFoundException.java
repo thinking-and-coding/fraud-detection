@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-package com.ververica.demo.backend.repositories;
+package com.ververica.demo.backend.exceptions;
 
-import com.ververica.demo.backend.entities.Rule;
-import java.util.List;
-import org.springframework.data.repository.CrudRepository;
+public class StrategyNotFoundException extends RuntimeException {
 
-public interface RuleRepository extends CrudRepository<Rule, Integer> {
-
-  @Override
-  List<Rule> findAll();
+  public StrategyNotFoundException(Integer id) {
+    super("Could not find employee " + id);
+  }
 }

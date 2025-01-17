@@ -15,11 +15,28 @@
  * limitations under the License.
  */
 
-package com.ververica.demo.backend.exceptions;
+package com.ververica.demo.backend.entities;
 
-public class RuleNotFoundException extends RuntimeException {
+import javax.persistence.*;
 
-  public RuleNotFoundException(Integer id) {
-    super("Could not find employee " + id);
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class Strategy {
+
+  public Strategy(String strategyPayload) {
+    this.strategyPayload = strategyPayload;
   }
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Integer id;
+
+  @Column(length = 512)
+  private String strategyPayload;
 }

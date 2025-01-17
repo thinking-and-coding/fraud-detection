@@ -17,7 +17,7 @@
 
 package com.ververica.demo.backend.datasource;
 
-import com.ververica.demo.backend.datasource.Transaction.PaymentType;
+import com.ververica.demo.backend.datasource.Event.PaymentType;
 import java.math.BigDecimal;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TransactionsGenerator implements Runnable {
+public class EventsGenerator implements Runnable {
 
   private static long MAX_PAYEE_ID = 100000;
   private static long MAX_BENEFICIARY_ID = 100000;
@@ -37,9 +37,9 @@ public class TransactionsGenerator implements Runnable {
   private volatile boolean running = true;
   private Integer maxRecordsPerSecond;
 
-  private Consumer<Transaction> consumer;
+  private Consumer<Event> consumer;
 
-  public TransactionsGenerator(Consumer<Transaction> consumer, int maxRecordsPerSecond) {
+  public EventsGenerator(Consumer<Event> consumer, int maxRecordsPerSecond) {
     this.consumer = consumer;
     this.maxRecordsPerSecond = maxRecordsPerSecond;
     this.throttler = new Throttler(maxRecordsPerSecond);
@@ -49,8 +49,8 @@ public class TransactionsGenerator implements Runnable {
     throttler.adjustMaxRecordsPerSecond(maxRecordsPerSecond);
   }
 
-  protected Transaction randomEvent(SplittableRandom rnd) {
-    long transactionId = rnd.nextLong(Long.MAX_VALUE);
+  protected Event randomEvent(SplittableRandom rnd) {
+    long eventId = rnd.nextLong(Long.MAX_VALUE);
     String event = rnd.nextInt(0, 2) > 0 ? "pay" : "refund";
     long payeeId = rnd.nextLong(MAX_PAYEE_ID);
     long beneficiaryId = rnd.nextLong(MAX_BENEFICIARY_ID);
@@ -59,18 +59,18 @@ public class TransactionsGenerator implements Runnable {
     paymentAmountDouble = Math.floor(paymentAmountDouble * 100) / 100;
     BigDecimal paymentAmount = BigDecimal.valueOf(paymentAmountDouble);
 
-    return Transaction.builder()
-            .transactionId(transactionId)
+    return Event.builder()
+            .eventId(eventId)
             .event(event)
             .payeeId(payeeId)
             .beneficiaryId(beneficiaryId)
             .paymentAmount(paymentAmount)
-            .paymentType(paymentType(transactionId))
+            .paymentType(paymentType(eventId))
             .eventTime(System.currentTimeMillis())
             .build();
   }
 
-  public Transaction generateOne() {
+  public Event generateOne() {
     return randomEvent(new SplittableRandom());
   }
 
@@ -93,7 +93,7 @@ public class TransactionsGenerator implements Runnable {
     final SplittableRandom rnd = new SplittableRandom();
 
     while (running) {
-      Transaction event = randomEvent(rnd);
+      Event event = randomEvent(rnd);
       log.debug("{}", event);
       consumer.accept(event);
       try {

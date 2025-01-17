@@ -47,7 +47,7 @@ public class JsonDeserializer<T> extends RichFlatMapFunction<String, T> {
       T parsed = parser.fromString(value);
       out.collect(parsed);
     } catch (Exception e) {
-      log.warn("Failed parsing rule, dropping it:", e);
+      log.warn("Failed parsing strategy, dropping it:", e);
     }
   }
 }

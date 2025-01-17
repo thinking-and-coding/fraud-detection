@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 public class AccumulatorHelper {
 
-    /* Picks and returns a new accumulator, based on the Rule's aggregator function type. */
+    /* Picks and returns a new accumulator, based on the Strategy's aggregator function type. */
     public static SimpleAccumulator<BigDecimal> getAggregator(AggregatorFunctionType aggregatorFunctionType) {
         switch (aggregatorFunctionType) {
             case SUM:

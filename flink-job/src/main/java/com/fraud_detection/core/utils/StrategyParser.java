@@ -18,10 +18,10 @@
 
 package com.fraud_detection.core.utils;
 
-import com.fraud_detection.core.entity.Rule;
+import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.entity.enums.AggregatorFunctionType;
 import com.fraud_detection.core.entity.enums.LimitOperatorType;
-import com.fraud_detection.core.entity.enums.RuleState;
+import com.fraud_detection.core.entity.enums.StrategyState;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -32,11 +32,11 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
-public class RuleParser {
+public class StrategyParser {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public Rule fromString(String line) throws IOException {
+  public Strategy fromString(String line) throws IOException {
     if (StringUtils.isNotBlank(line) && '{' == line.charAt(0)) {
       return parseJson(line);
     } else {
@@ -44,32 +44,31 @@ public class RuleParser {
     }
   }
 
-  private Rule parseJson(String ruleString) throws IOException {
-    return objectMapper.readValue(ruleString, Rule.class);
+  private Strategy parseJson(String strategyString) throws IOException {
+    return objectMapper.readValue(strategyString, Strategy.class);
   }
 
-  private static Rule parsePlain(String ruleString) throws IOException {
-    List<String> tokens = Arrays.asList(ruleString.split(","));
-    if (tokens.size() != 10) {
-      throw new IOException("Invalid rule (wrong number of tokens): " + ruleString);
+  private static Strategy parsePlain(String strategyString) throws IOException {
+    List<String> tokens = Arrays.asList(strategyString.split(","));
+    if (tokens.size() != 9) {
+      throw new IOException("Invalid strategy (wrong number of tokens): " + strategyString);
     }
 
     Iterator<String> iter = tokens.iterator();
-    Rule rule = new Rule();
+    Strategy strategy = new Strategy();
 
-    rule.setRuleId(Integer.parseInt(stripBrackets(iter.next())));
-    rule.setRuleState(RuleState.valueOf(stripBrackets(iter.next()).toUpperCase()));
-    rule.setEvents(getNames(iter.next()));
-    rule.setGroupingKeyNames(getNames(iter.next()));
-    rule.setUnique(getNames(iter.next()));
-    rule.setAggregateFieldName(stripBrackets(iter.next()));
-    rule.setAggregatorFunctionType(
+    strategy.setStrategyId(Integer.parseInt(stripBrackets(iter.next())));
+    strategy.setStrategyState(StrategyState.valueOf(stripBrackets(iter.next()).toUpperCase()));
+    strategy.setEvents(getNames(iter.next()));
+    strategy.setGroupingKeyNames(getNames(iter.next()));
+    strategy.setAggregateFieldName(stripBrackets(iter.next()));
+    strategy.setAggregatorFunctionType(
         AggregatorFunctionType.valueOf(stripBrackets(iter.next()).toUpperCase()));
-    rule.setLimitOperatorType(LimitOperatorType.fromString(stripBrackets(iter.next())));
-    rule.setLimit(new BigDecimal(stripBrackets(iter.next())));
-    rule.setWindowMinutes(Integer.parseInt(stripBrackets(iter.next())));
+    strategy.setLimitOperatorType(LimitOperatorType.fromString(stripBrackets(iter.next())));
+    strategy.setLimit(new BigDecimal(stripBrackets(iter.next())));
+    strategy.setWindowMinutes(Integer.parseInt(stripBrackets(iter.next())));
 
-    return rule;
+    return strategy;
   }
 
   private static String stripBrackets(String expression) {

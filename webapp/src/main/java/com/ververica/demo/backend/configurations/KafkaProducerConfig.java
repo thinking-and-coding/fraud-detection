@@ -53,7 +53,7 @@ public class KafkaProducerConfig {
     return props;
   }
 
-  // Transactions
+  // Events
   @Bean
   public ProducerFactory<String, Object> producerFactoryForJson() {
     return new DefaultKafkaProducerFactory<>(producerConfigsJson());

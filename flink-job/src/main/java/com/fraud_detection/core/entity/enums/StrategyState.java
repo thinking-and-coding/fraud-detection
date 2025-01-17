@@ -1,5 +1,5 @@
 package com.fraud_detection.core.entity.enums;
 
-public enum RuleState {
+public enum StrategyState {
     ACTIVE, PAUSE, DELETE, CONTROL
 }

@@ -19,12 +19,12 @@ package com.ververica.demo.backend.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ververica.demo.backend.datasource.Transaction;
-import com.ververica.demo.backend.entities.Rule;
-import com.ververica.demo.backend.exceptions.RuleNotFoundException;
+import com.ververica.demo.backend.datasource.Event;
+import com.ververica.demo.backend.entities.Strategy;
+import com.ververica.demo.backend.exceptions.StrategyNotFoundException;
 import com.ververica.demo.backend.model.Alert;
-import com.ververica.demo.backend.repositories.RuleRepository;
-import com.ververica.demo.backend.services.KafkaTransactionsPusher;
+import com.ververica.demo.backend.repositories.StrategyRepository;
+import com.ververica.demo.backend.services.KafkaEventsPusher;
 import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,8 +38,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class AlertsController {
 
-  private final RuleRepository repository;
-  private final KafkaTransactionsPusher transactionsPusher;
+  private final StrategyRepository repository;
+  private final KafkaEventsPusher eventsPusher;
   private SimpMessagingTemplate simpSender;
 
   @Value("${web-socket.topic.alerts}")
@@ -47,24 +47,24 @@ public class AlertsController {
 
   @Autowired
   public AlertsController(
-      RuleRepository repository,
-      KafkaTransactionsPusher transactionsPusher,
+      StrategyRepository repository,
+      KafkaEventsPusher eventsPusher,
       SimpMessagingTemplate simpSender) {
     this.repository = repository;
-    this.transactionsPusher = transactionsPusher;
+    this.eventsPusher = eventsPusher;
     this.simpSender = simpSender;
   }
 
   ObjectMapper mapper = new ObjectMapper();
 
-  @GetMapping("/rules/{id}/alert")
+  @GetMapping("/strategies/{id}/alert")
   Alert mockAlert(@PathVariable Integer id) throws JsonProcessingException {
-    Rule rule = repository.findById(id).orElseThrow(() -> new RuleNotFoundException(id));
-    Transaction triggeringEvent = transactionsPusher.getLastTransaction();
-    String violatedRule = rule.getRulePayload();
+    Strategy strategy = repository.findById(id).orElseThrow(() -> new StrategyNotFoundException(id));
+    Event triggeringEvent = eventsPusher.getLastEvent();
+    String violatedStrategy = strategy.getStrategyPayload();
     BigDecimal triggeringValue = triggeringEvent.getPaymentAmount().multiply(new BigDecimal(10));
 
-    Alert alert = new Alert(rule.getId(), violatedRule, triggeringEvent, triggeringValue);
+    Alert alert = new Alert(strategy.getId(), violatedStrategy, triggeringEvent, triggeringValue);
 
     String result = mapper.writeValueAsString(alert);
 

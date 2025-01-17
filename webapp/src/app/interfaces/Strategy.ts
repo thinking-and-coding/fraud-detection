@@ -1,18 +1,18 @@
 import { RefObject } from "react";
 
-export interface Rule {
+export interface Strategy {
   id: number;
-  rulePayload: string;
+  strategyPayload: string;
   ref: RefObject<HTMLDivElement>;
 }
 
-export interface RulePayload {
+export interface StrategyPayload {
   aggregateFieldName: string;
   aggregatorFunctionType: string;
   groupingKeyNames: string[];
   limit: number;
   limitOperatorType: string;
   windowMinutes: number;
-  ruleState: string;
+  strategyState: string;
   events: string[];
 }

@@ -45,7 +45,7 @@ ext {
 }
 
 // artifact properties
-group = 'com.fraud_detection.dynamicrules'
+group = 'com.fraud_detection.dynamic_strategies'
 version = '1.2'
 jar.archiveName = "${jar.baseName}-${version}-flink-${flinkVersion}.${jar.extension}"
 mainClassName = 'com.fraud_detection.Main'

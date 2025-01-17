@@ -34,10 +34,10 @@ public class JsonGeneratorWrapper<T> extends BaseGenerator<String> {
 
   @Override
   public String randomEvent(SplittableRandom rnd, long id) {
-    T transaction = wrappedGenerator.randomEvent(rnd, id);
+    T event = wrappedGenerator.randomEvent(rnd, id);
     String json;
     try {
-      json = objectMapper.writeValueAsString(transaction);
+      json = objectMapper.writeValueAsString(event);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }

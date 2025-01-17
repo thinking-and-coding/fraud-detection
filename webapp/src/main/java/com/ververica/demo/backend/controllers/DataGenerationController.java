@@ -17,9 +17,9 @@
 
 package com.ververica.demo.backend.controllers;
 
-import com.ververica.demo.backend.datasource.DemoTransactionsGenerator;
-import com.ververica.demo.backend.datasource.TransactionsGenerator;
-import com.ververica.demo.backend.services.KafkaTransactionsPusher;
+import com.ververica.demo.backend.datasource.DemoEventsGenerator;
+import com.ververica.demo.backend.datasource.EventsGenerator;
+import com.ververica.demo.backend.services.KafkaEventsPusher;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.extern.slf4j.Slf4j;
@@ -35,69 +35,69 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class DataGenerationController {
 
-  private TransactionsGenerator transactionsGenerator;
+  private EventsGenerator eventsGenerator;
   private KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
 
   private ExecutorService executor = Executors.newSingleThreadExecutor();
-  private boolean generatingTransactions = false;
+  private boolean generatingEvents = false;
   private boolean listenerContainerRunning = true;
 
-  @Value("${kafka.listeners.transactions.id}")
-  private String transactionListenerId;
+  @Value("${kafka.listeners.events.id}")
+  private String eventsListenerId;
 
-  @Value("${transactionsRateDisplayLimit}")
-  private int transactionsRateDisplayLimit;
+  @Value("${eventsRateDisplayLimit}")
+  private int eventsRateDisplayLimit;
 
   @Autowired
   public DataGenerationController(
-      KafkaTransactionsPusher transactionsPusher,
+      KafkaEventsPusher eventsPusher,
       KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry) {
-    transactionsGenerator = new DemoTransactionsGenerator(transactionsPusher, 1);
+    eventsGenerator = new DemoEventsGenerator(eventsPusher, 1);
     this.kafkaListenerEndpointRegistry = kafkaListenerEndpointRegistry;
   }
 
-  @GetMapping("/api/startTransactionsGeneration")
-  public void startTransactionsGeneration() throws Exception {
-    log.info("{}", "startTransactionsGeneration called");
-    generateTransactions();
+  @GetMapping("/api/startEventsGeneration")
+  public void startEventsGeneration() throws Exception {
+    log.info("{}", "startEventsGeneration called");
+    generateEvents();
   }
 
-  private void generateTransactions() {
-    if (!generatingTransactions) {
-      executor.submit(transactionsGenerator);
-      generatingTransactions = true;
+  private void generateEvents() {
+    if (!generatingEvents) {
+      executor.submit(eventsGenerator);
+      generatingEvents = true;
     }
   }
 
-  @GetMapping("/api/stopTransactionsGeneration")
-  public void stopTransactionsGeneration() {
-    transactionsGenerator.cancel();
-    generatingTransactions = false;
-    log.info("{}", "stopTransactionsGeneration called");
+  @GetMapping("/api/stopEventsGeneration")
+  public void stopEventsGeneration() {
+    eventsGenerator.cancel();
+    generatingEvents = false;
+    log.info("{}", "stopEventsGeneration called");
   }
 
   @GetMapping("/api/generatorSpeed/{speed}")
   public void setGeneratorSpeed(@PathVariable Long speed) {
     log.info("Generator speed change request: " + speed);
     if (speed <= 0) {
-      transactionsGenerator.cancel();
-      generatingTransactions = false;
+      eventsGenerator.cancel();
+      generatingEvents = false;
       return;
     } else {
-      generateTransactions();
+      generateEvents();
     }
 
     MessageListenerContainer listenerContainer =
-        kafkaListenerEndpointRegistry.getListenerContainer(transactionListenerId);
-    if (speed > transactionsRateDisplayLimit) {
+        kafkaListenerEndpointRegistry.getListenerContainer(eventsListenerId);
+    if (speed > eventsRateDisplayLimit) {
       listenerContainer.stop();
       listenerContainerRunning = false;
     } else if (!listenerContainerRunning) {
       listenerContainer.start();
     }
 
-    if (transactionsGenerator != null) {
-      transactionsGenerator.adjustMaxRecordsPerSecond(speed);
+    if (eventsGenerator != null) {
+      eventsGenerator.adjustMaxRecordsPerSecond(speed);
     }
   }
 }

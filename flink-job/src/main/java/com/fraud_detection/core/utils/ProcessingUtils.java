@@ -18,7 +18,7 @@
 
 package com.fraud_detection.core.utils;
 
-import com.fraud_detection.core.entity.Rule;
+import com.fraud_detection.core.entity.Strategy;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,14 +28,14 @@ import org.apache.flink.api.common.state.MapState;
 
 public class ProcessingUtils {
 
-    public static void handleRuleBroadcast(Rule rule, BroadcastState<Integer, Rule> broadcastState) throws Exception {
-        switch (rule.getRuleState()) {
+    public static void handleStrategyBroadcast(Strategy strategy, BroadcastState<Integer, Strategy> broadcastState) throws Exception {
+        switch (strategy.getStrategyState()) {
             case ACTIVE:
             case PAUSE:
-                broadcastState.put(rule.getRuleId(), rule);
+                broadcastState.put(strategy.getStrategyId(), strategy);
                 break;
             case DELETE:
-                broadcastState.remove(rule.getRuleId());
+                broadcastState.remove(strategy.getStrategyId());
                 break;
         }
     }

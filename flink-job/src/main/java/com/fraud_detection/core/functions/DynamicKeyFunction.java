@@ -20,11 +20,11 @@ package com.fraud_detection.core.functions;
 
 
 import com.fraud_detection.core.Descriptors;
+import com.fraud_detection.core.entity.Event;
 import com.fraud_detection.core.entity.Keyed;
-import com.fraud_detection.core.entity.Rule;
+import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.entity.enums.ControlType;
-import com.fraud_detection.core.entity.enums.RuleState;
-import com.fraud_detection.core.entity.Transaction;
+import com.fraud_detection.core.entity.enums.StrategyState;
 import com.fraud_detection.core.utils.KeysExtractor;
 import com.fraud_detection.core.utils.ProcessingUtils;
 import lombok.Data;
@@ -41,67 +41,67 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * Implements dynamic data partitioning based on a set of broadcasted rules.
+ * Implements dynamic data partitioning based on a set of broadcasted strategies.
  */
 @Slf4j
-public class DynamicKeyFunction extends BroadcastProcessFunction<Transaction, Rule, Keyed<Transaction, String, Integer>> {
+public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy, Keyed<Event, String, Integer>> {
 
-    private RuleCounterGauge ruleCounterGauge;
+    private StrategyCounterGauge strategyCounterGauge;
 
     @Override
     public void open(Configuration parameters) {
-        ruleCounterGauge = new RuleCounterGauge();
-        getRuntimeContext().getMetricGroup().gauge("numberOfActiveRulesByEvent", ruleCounterGauge);
+        strategyCounterGauge = new StrategyCounterGauge();
+        getRuntimeContext().getMetricGroup().gauge("numberOfActiveStrategiesByEvent", strategyCounterGauge);
     }
 
     @Override
-    public void processElement(Transaction transaction, ReadOnlyContext ctx, Collector<Keyed<Transaction, String, Integer>> out) throws Exception {
-        ReadOnlyBroadcastState<Integer, Rule> rulesState = ctx.getBroadcastState(Descriptors.rulesDescriptor);
-        forkTransactionForEachGroupingKey(transaction, rulesState, out);
+    public void processElement(Event event, ReadOnlyContext ctx, Collector<Keyed<Event, String, Integer>> out) throws Exception {
+        ReadOnlyBroadcastState<Integer, Strategy> strategiesState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
+        forkEventForEachGroupingKey(event, strategiesState, out);
     }
 
-    private void forkTransactionForEachGroupingKey(Transaction transaction, ReadOnlyBroadcastState<Integer, Rule> rulesState, Collector<Keyed<Transaction, String, Integer>> out) throws Exception {
-        List<Integer> ruleIds = new ArrayList<>();
-        for (Map.Entry<Integer, Rule> entry : rulesState.immutableEntries()) {
-            final Rule rule = entry.getValue();
-            if (rule.getEvents().contains(transaction.getEvent())) {
-                String key = KeysExtractor.getKey(rule.getGroupingKeyNames(), transaction);
+    private void forkEventForEachGroupingKey(Event event, ReadOnlyBroadcastState<Integer, Strategy> strategiesState, Collector<Keyed<Event, String, Integer>> out) throws Exception {
+        List<Integer> strategyIds = new ArrayList<>();
+        for (Map.Entry<Integer, Strategy> entry : strategiesState.immutableEntries()) {
+            final Strategy strategy = entry.getValue();
+            if (strategy.getEvents().contains(event.getEvent())) {
+                String key = KeysExtractor.getKey(strategy.getGroupingKeyNames(), event);
                 if (StringUtils.isNotBlank(key)) {
-                    out.collect(new Keyed<>(transaction, key, rule.getRuleId()));
+                    out.collect(new Keyed<>(event, key, strategy.getStrategyId()));
                 }
-                ruleIds.add(rule.getRuleId());
+                strategyIds.add(strategy.getStrategyId());
             }
         }
         Map<String, List<Integer>> map = new HashMap<>();
-        map.put(transaction.getEvent(), ruleIds);
-        ruleCounterGauge.setValue(map);
+        map.put(event.getEvent(), strategyIds);
+        strategyCounterGauge.setValue(map);
     }
 
     @Override
-    public void processBroadcastElement(Rule rule, Context ctx, Collector<Keyed<Transaction, String, Integer>> out) throws Exception {
-        log.info("{}", rule);
-        BroadcastState<Integer, Rule> broadcastState = ctx.getBroadcastState(Descriptors.rulesDescriptor);
-        ProcessingUtils.handleRuleBroadcast(rule, broadcastState);
-        if (rule.getRuleState() == RuleState.CONTROL) {
-            handleControlCommand(rule.getControlType(), broadcastState);
+    public void processBroadcastElement(Strategy strategy, Context ctx, Collector<Keyed<Event, String, Integer>> out) throws Exception {
+        log.info("{}", strategy);
+        BroadcastState<Integer, Strategy> broadcastState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
+        ProcessingUtils.handleStrategyBroadcast(strategy, broadcastState);
+        if (strategy.getStrategyState() == StrategyState.CONTROL) {
+            handleControlCommand(strategy.getControlType(), broadcastState);
         }
     }
 
-    private void handleControlCommand(ControlType controlType, BroadcastState<Integer, Rule> rulesState) throws Exception {
+    private void handleControlCommand(ControlType controlType, BroadcastState<Integer, Strategy> strategiesState) throws Exception {
         switch (controlType) {
-            case DELETE_RULES_ALL:
-                Iterator<Entry<Integer, Rule>> entriesIterator = rulesState.iterator();
+            case DELETE_STRATEGIES_ALL:
+                Iterator<Entry<Integer, Strategy>> entriesIterator = strategiesState.iterator();
                 while (entriesIterator.hasNext()) {
-                    Entry<Integer, Rule> ruleEntry = entriesIterator.next();
-                    rulesState.remove(ruleEntry.getKey());
-                    log.info("Removed Rule {}", ruleEntry.getValue());
+                    Entry<Integer, Strategy> strategyEntry = entriesIterator.next();
+                    strategiesState.remove(strategyEntry.getKey());
+                    log.info("Removed Strategy {}", strategyEntry.getValue());
                 }
                 break;
         }
     }
 
     @Data
-    private static class RuleCounterGauge implements Gauge<Map<String, List<Integer>>> {
+    private static class StrategyCounterGauge implements Gauge<Map<String, List<Integer>>> {
 
         private Map<String, List<Integer>> value = new HashMap<>();
 

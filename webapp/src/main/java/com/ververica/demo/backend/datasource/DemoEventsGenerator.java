@@ -23,28 +23,28 @@ import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class DemoTransactionsGenerator extends TransactionsGenerator {
+public class DemoEventsGenerator extends EventsGenerator {
 
   private long lastPayeeIdBeneficiaryIdTriggered = System.currentTimeMillis();
   private long lastBeneficiaryIdTriggered = System.currentTimeMillis();
   private BigDecimal beneficiaryLimit = new BigDecimal(10000000);
   private BigDecimal payeeBeneficiaryLimit = new BigDecimal(20000000);
 
-  public DemoTransactionsGenerator(Consumer<Transaction> consumer, int maxRecordsPerSecond) {
+  public DemoEventsGenerator(Consumer<Event> consumer, int maxRecordsPerSecond) {
     super(consumer, maxRecordsPerSecond);
   }
 
-  protected Transaction randomEvent(SplittableRandom rnd) {
-    Transaction transaction = super.randomEvent(rnd);
+  protected Event randomEvent(SplittableRandom rnd) {
+    Event event = super.randomEvent(rnd);
     long now = System.currentTimeMillis();
     if (now - lastBeneficiaryIdTriggered > 8000 + rnd.nextInt(5000)) {
-      transaction.setPaymentAmount(beneficiaryLimit.add(new BigDecimal(rnd.nextInt(1000000))));
+      event.setPaymentAmount(beneficiaryLimit.add(new BigDecimal(rnd.nextInt(1000000))));
       this.lastBeneficiaryIdTriggered = System.currentTimeMillis();
     }
     if (now - lastPayeeIdBeneficiaryIdTriggered > 12000 + rnd.nextInt(10000)) {
-      transaction.setPaymentAmount(payeeBeneficiaryLimit.add(new BigDecimal(rnd.nextInt(1000000))));
+      event.setPaymentAmount(payeeBeneficiaryLimit.add(new BigDecimal(rnd.nextInt(1000000))));
       this.lastPayeeIdBeneficiaryIdTriggered = System.currentTimeMillis();
     }
-    return transaction;
+    return event;
   }
 }

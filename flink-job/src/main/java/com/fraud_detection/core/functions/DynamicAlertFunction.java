@@ -20,11 +20,11 @@ package com.fraud_detection.core.functions;
 
 import com.fraud_detection.core.Descriptors;
 import com.fraud_detection.core.entity.Alert;
+import com.fraud_detection.core.entity.Event;
 import com.fraud_detection.core.entity.Keyed;
-import com.fraud_detection.core.entity.Rule;
-import com.fraud_detection.core.entity.Transaction;
+import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.entity.enums.ControlType;
-import com.fraud_detection.core.entity.enums.RuleState;
+import com.fraud_detection.core.entity.enums.StrategyState;
 import com.fraud_detection.core.utils.AccumulatorHelper;
 import com.fraud_detection.core.utils.FieldsExtractor;
 import com.fraud_detection.core.utils.ProcessingUtils;
@@ -45,23 +45,23 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.fraud_detection.core.utils.ProcessingUtils.handleRuleBroadcast;
+import static com.fraud_detection.core.utils.ProcessingUtils.handleStrategyBroadcast;
 
 /**
- * Implements main rule evaluation and alerting logic.
+ * Implements main strategy evaluation and alerting logic.
  */
 @Slf4j
-public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, Keyed<Transaction, String, Integer>, Rule, Alert> {
+public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, Keyed<Event, String, Integer>, Strategy, Alert> {
 
     private static final String COUNT = "COUNT_FLINK";
 
     private static final String COUNT_WITH_RESET = "COUNT_WITH_RESET_FLINK";
 
-    private static final int WIDEST_RULE_KEY = Integer.MIN_VALUE;
+    private static final int WIDEST_STRATEGY_KEY = Integer.MIN_VALUE;
 
     private static final int CLEAR_STATE_COMMAND_KEY = Integer.MIN_VALUE + 1;
 
-    private transient MapState<Long, Set<Transaction>> windowState;
+    private transient MapState<Long, Set<Event>> windowState;
 
     private Meter alertMeter;
 
@@ -75,89 +75,89 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
     }
 
     @Override
-    public void processElement(Keyed<Transaction, String, Integer> value, ReadOnlyContext ctx, Collector<Alert> out) throws Exception {
-        Transaction transaction = value.getWrapped();
-        long currentEventTime = transaction.getEventTime();
+    public void processElement(Keyed<Event, String, Integer> value, ReadOnlyContext ctx, Collector<Alert> out) throws Exception {
+        Event event = value.getWrapped();
+        long currentEventTime = event.getEventTime();
 
-        ProcessingUtils.addToStateValuesSet(windowState, currentEventTime, transaction);
+        ProcessingUtils.addToStateValuesSet(windowState, currentEventTime, event);
 
-        long ingestionTime = transaction.getIngestionTimestamp();
+        long ingestionTime = event.getIngestionTimestamp();
         ctx.output(Descriptors.latencySinkTag, System.currentTimeMillis() - ingestionTime);
 
-        Rule rule = ctx.getBroadcastState(Descriptors.rulesDescriptor).get(value.getId());
+        Strategy strategy = ctx.getBroadcastState(Descriptors.strategiesDescriptor).get(value.getId());
 
-        if (noRuleAvailable(rule)) {
-            log.error("Rule with ID {} does not exist", value.getId());
+        if (noStrategyAvailable(strategy)) {
+            log.error("Strategy with ID {} does not exist", value.getId());
             return;
         }
 
-        if (rule.getRuleState() == RuleState.ACTIVE) {
-            Long windowStartForEvent = rule.getWindowStartFor(currentEventTime);
+        if (strategy.getStrategyState() == StrategyState.ACTIVE) {
+            Long windowStartForEvent = strategy.getWindowStartFor(currentEventTime);
 
             long cleanupTime = (currentEventTime / 1000) * 1000;
             ctx.timerService().registerEventTimeTimer(cleanupTime);
 
-            SimpleAccumulator<BigDecimal> aggregator = AccumulatorHelper.getAggregator(rule.getAggregatorFunctionType());
+            SimpleAccumulator<BigDecimal> aggregator = AccumulatorHelper.getAggregator(strategy.getAggregatorFunctionType());
             for (Long stateEventTime : windowState.keys()) {
                 if (isStateValueInWindow(stateEventTime, windowStartForEvent, currentEventTime)) {
-                    aggregateValuesInState(stateEventTime, aggregator, rule);
+                    aggregateValuesInState(stateEventTime, aggregator, strategy);
                 }
             }
             BigDecimal aggregateResult = aggregator.getLocalValue();
-            boolean ruleResult = rule.apply(aggregateResult);
+            boolean strategyResult = strategy.apply(aggregateResult);
 
             ctx.output(
                 Descriptors.demoSinkTag,
-                "Rule "
-                    + rule.getRuleId()
+                "Strategy "
+                    + strategy.getStrategyId()
                     + " | "
                     + value.getKey()
                     + " : "
                     + aggregateResult.toString()
                     + " -> "
-                    + ruleResult);
+                    + strategyResult);
 
-            if (ruleResult) {
-                if (COUNT_WITH_RESET.equals(rule.getAggregateFieldName())) {
+            if (strategyResult) {
+                if (COUNT_WITH_RESET.equals(strategy.getAggregateFieldName())) {
                     evictAllStateElements();
                 }
                 alertMeter.markEvent();
-                out.collect(new Alert<>(rule.getRuleId(), rule, value.getKey(), value.getWrapped(), aggregateResult));
+                out.collect(new Alert<>(strategy.getStrategyId(), strategy, value.getKey(), value.getWrapped(), aggregateResult));
             }
         }
     }
 
     @Override
-    public void processBroadcastElement(Rule rule, Context ctx, Collector<Alert> out) throws Exception {
-        log.info("{}", rule);
-        BroadcastState<Integer, Rule> broadcastState = ctx.getBroadcastState(Descriptors.rulesDescriptor);
-        handleRuleBroadcast(rule, broadcastState);
-        updateWidestWindowRule(rule, broadcastState);
-        if (rule.getRuleState() == RuleState.CONTROL) {
-            handleControlCommand(rule, broadcastState, ctx);
+    public void processBroadcastElement(Strategy strategy, Context ctx, Collector<Alert> out) throws Exception {
+        log.info("{}", strategy);
+        BroadcastState<Integer, Strategy> broadcastState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
+        handleStrategyBroadcast(strategy, broadcastState);
+        updateWidestWindowStrategy(strategy, broadcastState);
+        if (strategy.getStrategyState() == StrategyState.CONTROL) {
+            handleControlCommand(strategy, broadcastState, ctx);
         }
     }
 
-    private void handleControlCommand(Rule command, BroadcastState<Integer, Rule> rulesState, Context ctx) throws Exception {
+    private void handleControlCommand(Strategy command, BroadcastState<Integer, Strategy> strategiesState, Context ctx) throws Exception {
         ControlType controlType = command.getControlType();
         switch (controlType) {
-            case EXPORT_RULES_CURRENT:
-                for (Map.Entry<Integer, Rule> entry : rulesState.entries()) {
-                    ctx.output(Descriptors.currentRulesSinkTag, entry.getValue());
+            case EXPORT_STRATEGIES_CURRENT:
+                for (Map.Entry<Integer, Strategy> entry : strategiesState.entries()) {
+                    ctx.output(Descriptors.currentStrategiesSinkTag, entry.getValue());
                 }
                 break;
             case CLEAR_STATE_ALL:
                 ctx.applyToKeyedState(Descriptors.windowStateDescriptor, (key, state) -> state.clear());
                 break;
             case CLEAR_STATE_ALL_STOP:
-                rulesState.remove(CLEAR_STATE_COMMAND_KEY);
+                strategiesState.remove(CLEAR_STATE_COMMAND_KEY);
                 break;
-            case DELETE_RULES_ALL:
-                Iterator<Entry<Integer, Rule>> entriesIterator = rulesState.iterator();
+            case DELETE_STRATEGIES_ALL:
+                Iterator<Entry<Integer, Strategy>> entriesIterator = strategiesState.iterator();
                 while (entriesIterator.hasNext()) {
-                    Entry<Integer, Rule> ruleEntry = entriesIterator.next();
-                    rulesState.remove(ruleEntry.getKey());
-                    log.info("Removed Rule {}", ruleEntry.getValue());
+                    Entry<Integer, Strategy> strategyEntry = entriesIterator.next();
+                    strategiesState.remove(strategyEntry.getKey());
+                    log.info("Removed Strategy {}", strategyEntry.getValue());
                 }
                 break;
         }
@@ -167,52 +167,52 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
         return stateEventTime >= windowStartForEvent && stateEventTime <= currentEventTime;
     }
 
-    private void aggregateValuesInState(Long stateEventTime, SimpleAccumulator<BigDecimal> aggregator, Rule rule) throws Exception {
-        Set<Transaction> inWindow = windowState.get(stateEventTime);
-        for (Transaction transaction : inWindow) {
-            if (rule.getEvents().contains(transaction.getEvent())) {
-                if (COUNT.equals(rule.getAggregateFieldName()) || COUNT_WITH_RESET.equals(rule.getAggregateFieldName())) {
+    private void aggregateValuesInState(Long stateEventTime, SimpleAccumulator<BigDecimal> aggregator, Strategy strategy) throws Exception {
+        Set<Event> inWindow = windowState.get(stateEventTime);
+        for (Event event : inWindow) {
+            if (strategy.getEvents().contains(event.getEvent())) {
+                if (COUNT.equals(strategy.getAggregateFieldName()) || COUNT_WITH_RESET.equals(strategy.getAggregateFieldName())) {
                     aggregator.add(BigDecimal.ONE);
                 } else {
-                    BigDecimal aggregatedValue = FieldsExtractor.getBigDecimalByName(rule.getAggregateFieldName(), transaction);
+                    BigDecimal aggregatedValue = FieldsExtractor.getBigDecimalByName(strategy.getAggregateFieldName(), event);
                     aggregator.add(aggregatedValue);
                 }
             }
         }
     }
 
-    private boolean noRuleAvailable(Rule rule) {
+    private boolean noStrategyAvailable(Strategy strategy) {
         // This could happen if the BroadcastState in this CoProcessFunction was updated after it was
         // updated and used in `DynamicKeyFunction`
-        if (rule == null) {
+        if (strategy == null) {
             return true;
         }
         return false;
     }
 
-    private void updateWidestWindowRule(Rule rule, BroadcastState<Integer, Rule> broadcastState) throws Exception {
-        Rule widestWindowRule = broadcastState.get(WIDEST_RULE_KEY);
+    private void updateWidestWindowStrategy(Strategy strategy, BroadcastState<Integer, Strategy> broadcastState) throws Exception {
+        Strategy widestWindowStrategy = broadcastState.get(WIDEST_STRATEGY_KEY);
 
-        if (rule.getRuleState() != RuleState.ACTIVE) {
+        if (strategy.getStrategyState() != StrategyState.ACTIVE) {
             return;
         }
 
-        if (widestWindowRule == null) {
-            broadcastState.put(WIDEST_RULE_KEY, rule);
+        if (widestWindowStrategy == null) {
+            broadcastState.put(WIDEST_STRATEGY_KEY, strategy);
             return;
         }
 
-        if (widestWindowRule.getWindowMillis() < rule.getWindowMillis()) {
-            broadcastState.put(WIDEST_RULE_KEY, rule);
+        if (widestWindowStrategy.getWindowMillis() < strategy.getWindowMillis()) {
+            broadcastState.put(WIDEST_STRATEGY_KEY, strategy);
         }
     }
 
     @Override
     public void onTimer(final long timestamp, final OnTimerContext ctx, final Collector<Alert> out) throws Exception {
 
-        Rule widestWindowRule = ctx.getBroadcastState(Descriptors.rulesDescriptor).get(WIDEST_RULE_KEY);
+        Strategy widestWindowStrategy = ctx.getBroadcastState(Descriptors.strategiesDescriptor).get(WIDEST_STRATEGY_KEY);
 
-        Optional<Long> cleanupEventTimeWindow = Optional.ofNullable(widestWindowRule).map(Rule::getWindowMillis);
+        Optional<Long> cleanupEventTimeWindow = Optional.ofNullable(widestWindowStrategy).map(Strategy::getWindowMillis);
         Optional<Long> cleanupEventTimeThreshold = cleanupEventTimeWindow.map(window -> timestamp - window);
 
         cleanupEventTimeThreshold.ifPresent(this::evictAgedElementsFromWindow);

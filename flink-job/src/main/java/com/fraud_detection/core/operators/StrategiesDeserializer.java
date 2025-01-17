@@ -18,36 +18,36 @@
 
 package com.fraud_detection.core.operators;
 
-import com.fraud_detection.core.entity.Rule;
-import com.fraud_detection.core.entity.enums.RuleState;
-import com.fraud_detection.core.utils.RuleParser;
+import com.fraud_detection.core.entity.Strategy;
+import com.fraud_detection.core.entity.enums.StrategyState;
+import com.fraud_detection.core.utils.StrategyParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
 
 @Slf4j
-public class RuleDeserializer extends RichFlatMapFunction<String, Rule> {
+public class StrategiesDeserializer extends RichFlatMapFunction<String, Strategy> {
 
-  private RuleParser ruleParser;
+  private StrategyParser strategyParser;
 
   @Override
   public void open(Configuration parameters) throws Exception {
     super.open(parameters);
-    ruleParser = new RuleParser();
+    strategyParser = new StrategyParser();
   }
 
   @Override
-  public void flatMap(String value, Collector<Rule> out) throws Exception {
+  public void flatMap(String value, Collector<Strategy> out) throws Exception {
     log.info("{}", value);
     try {
-      Rule rule = ruleParser.fromString(value);
-      if (rule.getRuleState() != RuleState.CONTROL && rule.getRuleId() == null) {
-        throw new NullPointerException("ruleId cannot be null: " + rule.toString());
+      Strategy strategy = strategyParser.fromString(value);
+      if (strategy.getStrategyState() != StrategyState.CONTROL && strategy.getStrategyId() == null) {
+        throw new NullPointerException("strategyId cannot be null: " + strategy.toString());
       }
-      out.collect(rule);
+      out.collect(strategy);
     } catch (Exception e) {
-      log.warn("Failed parsing rule, dropping it:", e);
+      log.warn("Failed parsing strategy, dropping it:", e);
     }
   }
 }

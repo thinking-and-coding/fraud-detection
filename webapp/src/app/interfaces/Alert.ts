@@ -1,12 +1,12 @@
-import { Transaction } from "./Transaction";
+import { Event } from "./Event";
 import { RefObject } from "react";
-import { RulePayload } from "./Rule";
+import { StrategyPayload } from "./Strategy";
 
 export interface Alert {
   alertId: string;
-  ruleId: number;
-  violatedRule: RulePayload;
+  strategyId: number;
+  violatedStrategy: StrategyPayload;
   triggeringValue: number;
-  triggeringEvent: Transaction;
+  triggeringEvent: Event;
   ref: RefObject<HTMLDivElement>;
 }

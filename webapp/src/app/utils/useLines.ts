@@ -1,9 +1,9 @@
-import { Alert, Rule } from "app/interfaces";
+import { Alert, Strategy } from "app/interfaces";
 import LeaderLine from "leader-line";
 import { flattenDeep } from "lodash/fp";
 import { RefObject, useCallback, useEffect, useState } from "react";
 
-export const useLines: UseLines = (transactionsRef, rules, alerts) => {
+export const useLines: UseLines = (eventsRef, strategies, alerts) => {
   const [lines, setLines] = useState<Line[]>([]);
 
   const updateLines = useCallback(() => {
@@ -18,10 +18,10 @@ export const useLines: UseLines = (transactionsRef, rules, alerts) => {
 
   useEffect(() => {
     const newLines = flattenDeep<Line>(
-      rules.map(rule => {
-        const hasAlert = alerts.some(alert => alert.ruleId === rule.id);
+      strategies.map(strategy => {
+        const hasAlert = alerts.some(alert => alert.strategyId === strategy.id);
 
-        const inputLine = new LeaderLine(transactionsRef.current, rule.ref.current, {
+        const inputLine = new LeaderLine(eventsRef.current, strategy.ref.current, {
           color: hasAlert ? "#dc3545" : undefined,
           dash: { animation: true },
           endSocket: "left",
@@ -29,10 +29,10 @@ export const useLines: UseLines = (transactionsRef, rules, alerts) => {
         }) as Line;
 
         const outputLines = alerts.reduce<Line[]>((acc, alert) => {
-          if (alert.ruleId === rule.id) {
+          if (alert.strategyId === strategy.id) {
             return [
               ...acc,
-              new LeaderLine(rule.ref.current, alert.ref.current, {
+              new LeaderLine(strategy.ref.current, alert.ref.current, {
                 color: "#fff",
                 endPlugOutline: true,
                 endSocket: "left",
@@ -54,15 +54,15 @@ export const useLines: UseLines = (transactionsRef, rules, alerts) => {
     return () => {
       newLines.forEach(line => line.line.remove());
     };
-  }, [transactionsRef, rules, alerts]);
+  }, [eventsRef, strategies, alerts]);
 
   return { lines, handleScroll: updateLines };
 };
 
 type UseLines = (
-  transactionsRef: RefObject<HTMLDivElement>,
-  rules: Rule[],
-  alerts: Alert[]
+    eventsRef: RefObject<HTMLDivElement>,
+    strategies: Strategy[],
+    alerts: Alert[]
 ) => {
   lines: Line[];
   handleScroll: () => void;
@@ -74,5 +74,5 @@ export interface Line {
     position: () => void;
     remove: () => void;
   };
-  ruleId: number;
+  strategyId: number;
 }

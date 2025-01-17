@@ -19,15 +19,15 @@
 package com.fraud_detection.core;
 
 import com.fraud_detection.core.entity.Alert;
+import com.fraud_detection.core.entity.Event;
 import com.fraud_detection.core.entity.Keyed;
-import com.fraud_detection.core.entity.Rule;
-import com.fraud_detection.core.entity.Transaction;
+import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.functions.DynamicAlertFunction;
 import com.fraud_detection.core.functions.DynamicKeyFunction;
 import com.fraud_detection.core.util.AssertUtils;
 import com.fraud_detection.core.util.BroadcastStreamKeyedOperatorTestHarness;
 import com.fraud_detection.core.util.BroadcastStreamNonKeyedOperatorTestHarness;
-import com.fraud_detection.core.utils.RuleParser;
+import com.fraud_detection.core.utils.StrategyParser;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.streaming.api.watermark.Watermark;
@@ -47,18 +47,18 @@ public class EngineTest {
 
   @Test
   public void shouldProduceKeyedOutput() throws Exception {
-    RuleParser ruleParser = new RuleParser();
-    Rule rule1 =
-        ruleParser.fromString("1,(active),(pay&refund),(paymentType&payeeId),,(totalFare),(SUM),(>),(50),(20)");
-    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,21.5,1");
+    StrategyParser strategyParser = new StrategyParser();
+    Strategy strategy1 =
+        strategyParser.fromString("1,(active),(pay&refund),(paymentType&payeeId),(totalFare),(SUM),(>),(50),(20)");
+    Event event1 = Event.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,21.5,1");
 
     try (BroadcastStreamNonKeyedOperatorTestHarness<
-            Transaction, Rule, Keyed<Transaction, String, Integer>>
+            Event, Strategy, Keyed<Event, String, Integer>>
         testHarness =
             BroadcastStreamNonKeyedOperatorTestHarness.getInitializedTestHarness(
-                new DynamicKeyFunction(), Descriptors.rulesDescriptor)) {
+                new DynamicKeyFunction(), Descriptors.strategiesDescriptor)) {
 
-      testHarness.processElement2(new StreamRecord<>(rule1, 12L));
+      testHarness.processElement2(new StreamRecord<>(strategy1, 12L));
       testHarness.processElement1(new StreamRecord<>(event1, 15L));
 
       Queue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
@@ -71,23 +71,23 @@ public class EngineTest {
   }
 
   @Test
-  public void shouldStoreRulesInBroadcastStateDuringDynamicKeying() throws Exception {
-    RuleParser ruleParser = new RuleParser();
-    Rule rule1 = ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(totalFare),(SUM),(>),(50),(20)");
+  public void shouldStoreStrategiesInBroadcastStateDuringDynamicKeying() throws Exception {
+    StrategyParser strategyParser = new StrategyParser();
+    Strategy strategy1 = strategyParser.fromString("1,(active),(pay&refund),(paymentType),(totalFare),(SUM),(>),(50),(20)");
 
     try (BroadcastStreamNonKeyedOperatorTestHarness<
-            Transaction, Rule, Keyed<Transaction, String, Integer>>
+            Event, Strategy, Keyed<Event, String, Integer>>
         testHarness =
             BroadcastStreamNonKeyedOperatorTestHarness.getInitializedTestHarness(
-                new DynamicKeyFunction(), Descriptors.rulesDescriptor)) {
+                new DynamicKeyFunction(), Descriptors.strategiesDescriptor)) {
 
-      testHarness.processElement2(new StreamRecord<>(rule1, 12L));
+      testHarness.processElement2(new StreamRecord<>(strategy1, 12L));
 
-      BroadcastState<Integer, Rule> broadcastState =
-          testHarness.getBroadcastState(Descriptors.rulesDescriptor);
+      BroadcastState<Integer, Strategy> broadcastState =
+          testHarness.getBroadcastState(Descriptors.strategiesDescriptor);
 
-      Map<Integer, Rule> expectedState = new HashMap<>();
-      expectedState.put(rule1.getRuleId(), rule1);
+      Map<Integer, Strategy> expectedState = new HashMap<>();
+      expectedState.put(strategy1.getStrategyId(), strategy1);
 
       AssertUtils.assertEquals(broadcastState, expectedState, "Output was not correct.");
     }
@@ -95,40 +95,40 @@ public class EngineTest {
 
   @Test
   public void shouldOutputSimplestAlert() throws Exception {
-    RuleParser ruleParser = new RuleParser();
+    StrategyParser strategyParser = new StrategyParser();
     // pay & refund events
-    Rule rule1 =
-        ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(paymentAmount),(SUM),(>),(20),(20)");
+    Strategy strategy1 =
+        strategyParser.fromString("1,(active),(pay&refund),(paymentType),(paymentAmount),(SUM),(>),(20),(20)");
 
-    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,22,1");
-    Transaction event2 = Transaction.fromString("2,refund,2013-01-01 00:00:01,1001,1002,CRD,19,1");
-    Transaction event3 = Transaction.fromString("3,pay,2013-01-01 00:00:02,1001,1002,CRD,2,1");
+    Event event1 = Event.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,22,1");
+    Event event2 = Event.fromString("2,refund,2013-01-01 00:00:01,1001,1002,CRD,19,1");
+    Event event3 = Event.fromString("3,pay,2013-01-01 00:00:02,1001,1002,CRD,2,1");
 
-    Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
-    Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CRD", 1);
-    Keyed<Transaction, String, Integer> keyed3 = new Keyed<>(event3, "CRD", 1);
+    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
+    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "CRD", 1);
+    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "CRD", 1);
 
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Transaction, String, Integer>, Rule, Alert>
+            String, Keyed<Event, String, Integer>, Strategy, Alert>
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
                     Keyed::getKey,
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
-                Descriptors.rulesDescriptor)) {
+                Descriptors.strategiesDescriptor)) {
 
-      testHarness.processElement2(new StreamRecord<>(rule1, 12L));
+      testHarness.processElement2(new StreamRecord<>(strategy1, 12L));
 
       testHarness.processElement1(new StreamRecord<>(keyed1, 15L));
       testHarness.processElement1(new StreamRecord<>(keyed2, 16L));
       testHarness.processElement1(new StreamRecord<>(keyed3, 17L));
 
       ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
-      Alert<Transaction, BigDecimal> alert1 =
-          new Alert<>(rule1.getRuleId(), rule1, "CSH", event1, BigDecimal.valueOf(22));
-      Alert<Transaction, BigDecimal> alert2 =
-          new Alert<>(rule1.getRuleId(), rule1, "CRD", event3, BigDecimal.valueOf(21));
+      Alert<Event, BigDecimal> alert1 =
+          new Alert<>(strategy1.getStrategyId(), strategy1, "CSH", event1, BigDecimal.valueOf(22));
+      Alert<Event, BigDecimal> alert2 =
+          new Alert<>(strategy1.getStrategyId(), strategy1, "CRD", event3, BigDecimal.valueOf(21));
 
       expectedOutput.add(new StreamRecord<>(alert1, 15L));
       expectedOutput.add(new StreamRecord<>(alert2, 17L));
@@ -140,34 +140,34 @@ public class EngineTest {
 
   @Test
   public void shouldOutputSimplestPayEventAlert() throws Exception {
-    RuleParser ruleParser = new RuleParser();
+    StrategyParser strategyParser = new StrategyParser();
     // pay events
-    Rule rule1 = ruleParser.fromString("1,(active),(pay),(paymentType),,(paymentAmount),(SUM),(=),(24),(20)");
-    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,22,1");
-    Transaction event2 = Transaction.fromString("2,refund,2013-01-01 00:00:01,1001,1002,CRD,19,1");
-    Transaction event3 = Transaction.fromString("3,pay,2013-01-01 00:00:02,1001,1002,CSH,2,1");
+    Strategy strategy1 = strategyParser.fromString("1,(active),(pay),(paymentType),(paymentAmount),(SUM),(=),(24),(20)");
+    Event event1 = Event.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,22,1");
+    Event event2 = Event.fromString("2,refund,2013-01-01 00:00:01,1001,1002,CRD,19,1");
+    Event event3 = Event.fromString("3,pay,2013-01-01 00:00:02,1001,1002,CSH,2,1");
 
-    Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
-    Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CRD", 1);
-    Keyed<Transaction, String, Integer> keyed3 = new Keyed<>(event3, "CSH", 1);
+    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
+    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "CRD", 1);
+    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "CSH", 1);
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Transaction, String, Integer>, Rule, Alert>
+            String, Keyed<Event, String, Integer>, Strategy, Alert>
                  testHarness =
                  BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                          new DynamicAlertFunction(),
                          keyed -> keyed.getKey(),
                          null,
                          BasicTypeInfo.STRING_TYPE_INFO,
-                         Descriptors.rulesDescriptor)) {
-      testHarness.processElement2(new StreamRecord<>(rule1, 12L));
+                         Descriptors.strategiesDescriptor)) {
+      testHarness.processElement2(new StreamRecord<>(strategy1, 12L));
 
       testHarness.processElement1(new StreamRecord<>(keyed1, 15L));
       testHarness.processElement1(new StreamRecord<>(keyed2, 16L));
       testHarness.processElement1(new StreamRecord<>(keyed3, 17L));
 
       ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
-      Alert<Transaction, BigDecimal> alert1 =
-              new Alert<>(rule1.getRuleId(), rule1, "CSH", event3, BigDecimal.valueOf(24));
+      Alert<Event, BigDecimal> alert1 =
+              new Alert<>(strategy1.getStrategyId(), strategy1, "CSH", event3, BigDecimal.valueOf(24));
 
       expectedOutput.add(new StreamRecord<>(alert1, 17L));
 
@@ -178,35 +178,35 @@ public class EngineTest {
 
   @Test
   public void shouldHandleSameTimestampEventsCorrectly() throws Exception {
-    RuleParser ruleParser = new RuleParser();
-    Rule rule1 =
-        ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(paymentAmount),(SUM),(>),(20),(20)");
+    StrategyParser strategyParser = new StrategyParser();
+    Strategy strategy1 =
+        strategyParser.fromString("1,(active),(pay&refund),(paymentType),(paymentAmount),(SUM),(>),(20),(20)");
 
-    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,19,1");
+    Event event1 = Event.fromString("1,pay,2013-01-01 00:00:00,1001,1002,CSH,19,1");
 
-    Transaction event2 = Transaction.fromString("2,refund,2013-01-01 00:00:00,1002,1003,CSH,2,1");
+    Event event2 = Event.fromString("2,refund,2013-01-01 00:00:00,1002,1003,CSH,2,1");
 
-    Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
-    Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CSH", 1);
+    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
+    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "CSH", 1);
 
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Transaction, String, Integer>, Rule, Alert>
+            String, Keyed<Event, String, Integer>, Strategy, Alert>
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
                     keyed -> keyed.getKey(),
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
-                Descriptors.rulesDescriptor)) {
+                Descriptors.strategiesDescriptor)) {
 
-      testHarness.processElement2(new StreamRecord<>(rule1, 12L));
+      testHarness.processElement2(new StreamRecord<>(strategy1, 12L));
 
       testHarness.processElement1(new StreamRecord<>(keyed1, 15L));
       testHarness.processElement1(new StreamRecord<>(keyed2, 16L));
 
       ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
-      Alert<Transaction, BigDecimal> alert1 =
-          new Alert<>(rule1.getRuleId(), rule1, "CSH", event2, new BigDecimal(21));
+      Alert<Event, BigDecimal> alert1 =
+          new Alert<>(strategy1.getStrategyId(), strategy1, "CSH", event2, new BigDecimal(21));
 
       expectedOutput.add(new StreamRecord<>(alert1, 16L));
 
@@ -217,37 +217,37 @@ public class EngineTest {
 
   @Test
   public void shouldCleanupStateBasedOnWatermarks() throws Exception {
-    RuleParser ruleParser = new RuleParser();
-    Rule rule1 =
-        ruleParser.fromString("1,(active),(pay&refund),(paymentType),,(paymentAmount),(SUM),(>),(10),(4)");
+    StrategyParser strategyParser = new StrategyParser();
+    Strategy strategy1 =
+        strategyParser.fromString("1,(active),(pay&refund),(paymentType),(paymentAmount),(SUM),(>),(10),(4)");
 
-    Transaction event1 = Transaction.fromString("1,pay,2013-01-01 00:01:00,1001,1002,CSH,3,1");
+    Event event1 = Event.fromString("1,pay,2013-01-01 00:01:00,1001,1002,CSH,3,1");
 
-    Transaction event2 = Transaction.fromString("2,pay,2013-01-01 00:02:00,1003,1004,CSH,3,1");
+    Event event2 = Event.fromString("2,pay,2013-01-01 00:02:00,1003,1004,CSH,3,1");
 
-    Transaction event3 = Transaction.fromString("3,refund,2013-01-01 00:03:00,1005,1006,CSH,5,1");
+    Event event3 = Event.fromString("3,refund,2013-01-01 00:03:00,1005,1006,CSH,5,1");
 
-    Transaction event4 = Transaction.fromString("4,refund,2013-01-01 00:06:00,1007,1008,CSH,3,1");
+    Event event4 = Event.fromString("4,refund,2013-01-01 00:06:00,1007,1008,CSH,3,1");
 
-    Keyed<Transaction, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
-    Keyed<Transaction, String, Integer> keyed2 = new Keyed<>(event2, "CSH", 1);
-    Keyed<Transaction, String, Integer> keyed3 = new Keyed<>(event3, "CSH", 1);
-    Keyed<Transaction, String, Integer> keyed4 = new Keyed<>(event4, "CSH", 1);
+    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
+    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "CSH", 1);
+    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "CSH", 1);
+    Keyed<Event, String, Integer> keyed4 = new Keyed<>(event4, "CSH", 1);
 
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Transaction, String, Integer>, Rule, Alert>
+            String, Keyed<Event, String, Integer>, Strategy, Alert>
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
                     keyed -> keyed.getKey(),
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
-                Descriptors.rulesDescriptor)) {
+                Descriptors.strategiesDescriptor)) {
 
       //      long halfAMinuteMillis = 30 * 1000l;
       long watermarkDelay = 2 * 60 * 1000L;
 
-      testHarness.processElement2(new StreamRecord<>(rule1, 1L));
+      testHarness.processElement2(new StreamRecord<>(strategy1, 1L));
 
       testHarness.processElement1(toStreamRecord(keyed1));
       testHarness.watermark(event1.getEventTime() - watermarkDelay);
@@ -263,8 +263,8 @@ public class EngineTest {
       testHarness.processElement1(toStreamRecord(keyed3));
 
       ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
-      Alert<Transaction, BigDecimal> alert1 =
-          new Alert<>(rule1.getRuleId(), rule1, "CSH", event3, new BigDecimal(11));
+      Alert<Event, BigDecimal> alert1 =
+          new Alert<>(strategy1.getStrategyId(), strategy1, "CSH", event3, new BigDecimal(11));
 
       expectedOutput.add(new StreamRecord<>(alert1, event3.getEventTime()));
 
@@ -273,8 +273,8 @@ public class EngineTest {
     }
   }
 
-  private StreamRecord<Keyed<Transaction, String, Integer>> toStreamRecord(
-      Keyed<Transaction, String, Integer> keyed) {
+  private StreamRecord<Keyed<Event, String, Integer>> toStreamRecord(
+      Keyed<Event, String, Integer> keyed) {
     return new StreamRecord<>(keyed, keyed.getWrapped().getEventTime());
   }
 

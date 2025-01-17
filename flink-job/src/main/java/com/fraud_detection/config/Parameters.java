@@ -60,23 +60,23 @@ public class Parameters {
 
     public static final Param<Integer> KAFKA_PORT = Param.integer("kafka-port", 9092);
 
-    public static final Param<String> DATA_TOPIC = Param.string("data-topic", "livetransactions");
+    public static final Param<String> DATA_TOPIC = Param.string("data-topic", "live-events");
 
     public static final Param<String> ALERTS_TOPIC = Param.string("alerts-topic", "alerts");
 
-    public static final Param<String> RULES_TOPIC = Param.string("rules-topic", "rules");
+    public static final Param<String> STRATEGIES_TOPIC = Param.string("strategies-topic", "strategies");
 
     public static final Param<String> LATENCY_TOPIC = Param.string("latency-topic", "latency");
 
-    public static final Param<String> RULES_EXPORT_TOPIC = Param.string("current-rules-topic", "current-rules");
+    public static final Param<String> STRATEGIES_EXPORT_TOPIC = Param.string("current-strategies-topic", "current-strategies");
 
     public static final Param<String> OFFSET = Param.string("offset", "latest");
 
     // General:
-    public static final Param<String> TRANSACTIONS_SOURCE = Param.string("data-source", "GENERATOR");
+    public static final Param<String> EVENTS_SOURCE = Param.string("data-source", "GENERATOR");
     public static final Param<String> ALERTS_SINK = Param.string("alerts-sink", "STDOUT");
     public static final Param<String> LATENCY_SINK = Param.string("latency-sink", "STDOUT");
-    public static final Param<String> RULES_EXPORT_SINK = Param.string("rules-export-sink", "STDOUT");
+    public static final Param<String> STRATEGIES_EXPORT_SINK = Param.string("strategies-export-sink", "STDOUT");
 
     public static final Param<Integer> RECORDS_PER_SECOND = Param.integer("records-per-second", 2);
 
@@ -88,20 +88,20 @@ public class Parameters {
 
     public static final Param<Integer> CHECKPOINT_INTERVAL = Param.integer("checkpoint-interval", 60_000_0);
     public static final Param<Integer> MIN_PAUSE_BETWEEN_CHECKPOINTS = Param.integer("min-pause-btwn-checkpoints", 10000);
-    public static final Param<Integer> OUT_OF_ORDERNESS = Param.integer("out-of-orderdness", 500);
+    public static final Param<Integer> OUT_OF_ORDERLESS = Param.integer("out-of-orderless", 500);
 
     public static final List<Param<String>> STRING_PARAMS = Arrays.asList(
             KAFKA_HOST,
             DATA_TOPIC,
             ALERTS_TOPIC,
-            RULES_TOPIC,
+            STRATEGIES_TOPIC,
             LATENCY_TOPIC,
-            RULES_EXPORT_TOPIC,
+            STRATEGIES_EXPORT_TOPIC,
             OFFSET,
-            TRANSACTIONS_SOURCE,
+            EVENTS_SOURCE,
             ALERTS_SINK,
             LATENCY_SINK,
-            RULES_EXPORT_SINK
+            STRATEGIES_EXPORT_SINK
     );
 
     public static final List<Param<Integer>> INT_PARAMS = Arrays.asList(
@@ -110,7 +110,7 @@ public class Parameters {
             SOURCE_PARALLELISM,
             CHECKPOINT_INTERVAL,
             MIN_PAUSE_BETWEEN_CHECKPOINTS,
-            OUT_OF_ORDERNESS
+            OUT_OF_ORDERLESS
     );
 
     public static final List<Param<Boolean>> BOOL_PARAMS = Arrays.asList(

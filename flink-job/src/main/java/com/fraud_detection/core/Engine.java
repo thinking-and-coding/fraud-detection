@@ -20,16 +20,16 @@ package com.fraud_detection.core;
 
 import com.fraud_detection.config.Config;
 import com.fraud_detection.core.entity.Alert;
-import com.fraud_detection.core.entity.Rule;
-import com.fraud_detection.core.entity.Transaction;
+import com.fraud_detection.core.entity.Event;
+import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.functions.DynamicAlertFunction;
 import com.fraud_detection.core.functions.DynamicKeyFunction;
 import com.fraud_detection.core.operators.AverageAggregate;
 import com.fraud_detection.sinks.AlertsSink;
-import com.fraud_detection.sinks.CurrentRulesSink;
+import com.fraud_detection.sinks.CurrentStrategiesSink;
 import com.fraud_detection.sinks.LatencySink;
-import com.fraud_detection.sources.RulesSource;
-import com.fraud_detection.sources.TransactionsSource;
+import com.fraud_detection.sources.StrategiesSource;
+import com.fraud_detection.sources.EventsSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
@@ -64,47 +64,47 @@ public class Engine {
     // Environment setup
     StreamExecutionEnvironment env = configureStreamExecutionEnvironment();
     // Streams setup
-    DataStream<Rule> rulesUpdateStream = getRulesUpdateStream(env);
-    DataStream<Transaction> transactions = getTransactionsStream(env);
+    DataStream<Strategy> strategiesUpdateStream = getStrategiesUpdateStream(env);
+    DataStream<Event> events = getEventsStream(env);
 
-    BroadcastStream<Rule> rulesStream = rulesUpdateStream.broadcast(Descriptors.rulesDescriptor);
+    BroadcastStream<Strategy> strategiesStream = strategiesUpdateStream.broadcast(Descriptors.strategiesDescriptor);
 
     // Processing pipeline setup
     SingleOutputStreamOperator<Alert> alerts =
-        transactions
-            .connect(rulesStream)
+        events
+            .connect(strategiesStream)
             .process(new DynamicKeyFunction())
             .uid("DynamicKeyFunction")
             .name("Dynamic Partitioning Function")
             .keyBy(keyed -> keyed.getKey())
-            .connect(rulesStream)
+            .connect(strategiesStream)
             .process(new DynamicAlertFunction())
             .uid("DynamicAlertFunction")
-            .name("Dynamic Rule Evaluation Function");
+            .name("Dynamic Strategy Evaluation Function");
 
-    DataStream<String> allRuleEvaluations =
+    DataStream<String> allStrategyEvaluations =
         alerts.getSideOutput(Descriptors.demoSinkTag);
 
     DataStream<Long> latency =
         alerts.getSideOutput(Descriptors.latencySinkTag);
 
-    DataStream<Rule> currentRules =
-        alerts.getSideOutput(Descriptors.currentRulesSinkTag);
+    DataStream<Strategy> currentStrategies =
+        alerts.getSideOutput(Descriptors.currentStrategiesSinkTag);
 
     alerts.print().name("Alert STDOUT Sink");
-    allRuleEvaluations.print().setParallelism(1).name("Rule Evaluation Sink");
+    allStrategyEvaluations.print().setParallelism(1).name("Strategy Evaluation Sink");
 
     DataStream<String> alertsJson = AlertsSink.alertsStreamToJson(alerts);
-    DataStream<String> currentRulesJson = CurrentRulesSink.rulesStreamToJson(currentRules);
+    DataStream<String> currentStrategiesJson = CurrentStrategiesSink.strategiesStreamToJson(currentStrategies);
 
-    currentRulesJson.print();
+    currentStrategiesJson.print();
 
     DataStreamSink<String> alertsSink = AlertsSink.addAlertsSink(config, alertsJson);
     alertsSink.setParallelism(1).name("Alerts JSON Sink");
 
-    DataStreamSink<String> currentRulesSink =
-        CurrentRulesSink.addRulesSink(config, currentRulesJson);
-    currentRulesSink.setParallelism(1);
+    DataStreamSink<String> currentStrategiesSink =
+        CurrentStrategiesSink.addStrategiesSink(config, currentStrategiesJson);
+    currentStrategiesSink.setParallelism(1);
 
     DataStream<String> latencies =
         latency
@@ -118,26 +118,26 @@ public class Engine {
     env.execute("Fraud Detection Engine");
   }
 
-  private DataStream<Transaction> getTransactionsStream(StreamExecutionEnvironment env) {
+  private DataStream<Event> getEventsStream(StreamExecutionEnvironment env) {
     // Data stream setup
     int sourceParallelism = config.get(SOURCE_PARALLELISM);
-    DataStream<String> transactionsStringsStream =
-        TransactionsSource.initTransactionsSource(config, env)
-            .name("Transactions Source")
+    DataStream<String> eventsStringsStream =
+        EventsSource.initEventsSource(config, env)
+            .name("Events Source")
             .setParallelism(sourceParallelism);
-    DataStream<Transaction> transactionsStream =
-        TransactionsSource.stringsStreamToTransactions(transactionsStringsStream);
-    return transactionsStream.assignTimestampsAndWatermarks(WatermarkStrategy
-            .<Transaction>forBoundedOutOfOrderness(Duration.ofMillis(config.get(OUT_OF_ORDERNESS)))
-            .withTimestampAssigner((transaction, timestamp) -> transaction.getEventTime()));
+    DataStream<Event> eventsStream =
+        EventsSource.stringsStreamToEvents(eventsStringsStream);
+    return eventsStream.assignTimestampsAndWatermarks(WatermarkStrategy
+            .<Event>forBoundedOutOfOrderness(Duration.ofMillis(config.get(OUT_OF_ORDERLESS)))
+            .withTimestampAssigner((event, timestamp) -> event.getEventTime()));
   }
 
-  private DataStream<Rule> getRulesUpdateStream(StreamExecutionEnvironment env) {
-    DataStream<String> rulesStrings =
-        RulesSource.initRulesSource(config, env)
-            .name("Rules Update Kafka Source")
+  private DataStream<Strategy> getStrategiesUpdateStream(StreamExecutionEnvironment env) {
+    DataStream<String> strategiesStrings =
+        StrategiesSource.initStrategiesSource(config, env)
+            .name("Strategies Update Kafka Source")
             .setParallelism(1);
-    return RulesSource.stringsStreamToRules(rulesStrings);
+    return StrategiesSource.stringsStreamToStrategies(strategiesStrings);
   }
 
   private StreamExecutionEnvironment configureStreamExecutionEnvironment() {

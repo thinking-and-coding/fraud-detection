@@ -20,15 +20,15 @@ package com.fraud_detection.sources;
 
 import static com.fraud_detection.config.Parameters.DATA_TOPIC;
 import static com.fraud_detection.config.Parameters.RECORDS_PER_SECOND;
-import static com.fraud_detection.config.Parameters.TRANSACTIONS_SOURCE;
+import static com.fraud_detection.config.Parameters.EVENTS_SOURCE;
 
 import com.fraud_detection.config.Config;
+import com.fraud_detection.core.entity.Event;
 import com.fraud_detection.core.utils.KafkaUtils;
-import com.fraud_detection.core.entity.Transaction;
 import com.fraud_detection.core.operators.JsonDeserializer;
 import com.fraud_detection.sources.generators.JsonGeneratorWrapper;
 import com.fraud_detection.core.operators.TimeStamper;
-import com.fraud_detection.sources.generators.TransactionsGenerator;
+import com.fraud_detection.sources.generators.EventsGenerator;
 import java.util.Properties;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
@@ -38,21 +38,21 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
-public class TransactionsSource {
+public class EventsSource {
 
-  public static DataStreamSource<String> initTransactionsSource(
+  public static DataStreamSource<String> initEventsSource(
       Config config, StreamExecutionEnvironment env) {
 
-    String sourceType = config.get(TRANSACTIONS_SOURCE);
-    TransactionsSource.Type transactionsSourceType =
-        TransactionsSource.Type.valueOf(sourceType.toUpperCase());
-    int transactionsPerSecond = config.get(RECORDS_PER_SECOND);
+    String sourceType = config.get(EVENTS_SOURCE);
+    EventsSource.Type eventsSourceType =
+        EventsSource.Type.valueOf(sourceType.toUpperCase());
+    int eventsPerSecond = config.get(RECORDS_PER_SECOND);
     DataStreamSource<String> dataStreamSource;
 
-    switch (transactionsSourceType) {
+    switch (eventsSourceType) {
       case KAFKA:
         Properties kafkaProps = KafkaUtils.initConsumerProperties(config);
-        String transactionsTopic = config.get(DATA_TOPIC);
+        String eventsTopic = config.get(DATA_TOPIC);
 
         // NOTE: Idiomatically, watermarks should be assigned here, but this done later
         // because of the mix of the new Source (Kafka) and SourceFunction-based interfaces.
@@ -61,35 +61,35 @@ public class TransactionsSource {
         KafkaSource<String> kafkaSource =
             KafkaSource.<String>builder()
                 .setProperties(kafkaProps)
-                .setTopics(transactionsTopic)
+                .setTopics(eventsTopic)
                 .setStartingOffsets(OffsetsInitializer.latest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
         dataStreamSource =
-            env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), "Rules Kafka Source");
+            env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), "Events Kafka Source");
         break;
       default:
-        JsonGeneratorWrapper<Transaction> generatorSource =
-            new JsonGeneratorWrapper<>(new TransactionsGenerator(transactionsPerSecond));
+        JsonGeneratorWrapper<Event> generatorSource =
+            new JsonGeneratorWrapper<>(new EventsGenerator(eventsPerSecond));
         dataStreamSource = env.addSource(generatorSource);
     }
     return dataStreamSource;
   }
 
-  public static DataStream<Transaction> stringsStreamToTransactions(
-      DataStream<String> transactionStrings) {
-    return transactionStrings
-        .flatMap(new JsonDeserializer<Transaction>(Transaction.class))
-        .returns(Transaction.class)
-        .flatMap(new TimeStamper<Transaction>())
-        .returns(Transaction.class)
-        .name("Transactions Deserialization");
+  public static DataStream<Event> stringsStreamToEvents(
+      DataStream<String> eventStrings) {
+    return eventStrings
+        .flatMap(new JsonDeserializer<Event>(Event.class))
+        .returns(Event.class)
+        .flatMap(new TimeStamper<Event>())
+        .returns(Event.class)
+        .name("Events Deserialization");
   }
 
   public enum Type {
-    GENERATOR("Transactions Source (generated locally)"),
-    KAFKA("Transactions Source (Kafka)");
+    GENERATOR("Events Source (generated locally)"),
+    KAFKA("Events Source (Kafka)");
 
     private String name;
 

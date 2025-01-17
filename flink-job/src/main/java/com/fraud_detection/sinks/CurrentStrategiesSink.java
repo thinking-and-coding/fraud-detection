@@ -19,8 +19,8 @@
 package com.fraud_detection.sinks;
 
 import com.fraud_detection.config.Config;
+import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.utils.KafkaUtils;
-import com.fraud_detection.core.entity.Rule;
 import com.fraud_detection.core.operators.JsonSerializer;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.base.DeliveryGuarantee;
@@ -33,28 +33,28 @@ import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import java.util.Arrays;
 import java.util.Properties;
 
-import static com.fraud_detection.config.Parameters.RULES_EXPORT_SINK;
-import static com.fraud_detection.config.Parameters.RULES_EXPORT_TOPIC;
+import static com.fraud_detection.config.Parameters.STRATEGIES_EXPORT_SINK;
+import static com.fraud_detection.config.Parameters.STRATEGIES_EXPORT_TOPIC;
 
-public class CurrentRulesSink {
+public class CurrentStrategiesSink {
 
-    public static DataStreamSink<String> addRulesSink(Config config, DataStream<String> stream) {
+    public static DataStreamSink<String> addStrategiesSink(Config config, DataStream<String> stream) {
 
-        String sinkType = config.get(RULES_EXPORT_SINK);
-        CurrentRulesSink.Type currentRulesSinkType = CurrentRulesSink.Type.valueOf(sinkType.toUpperCase());
+        String sinkType = config.get(STRATEGIES_EXPORT_SINK);
+        CurrentStrategiesSink.Type currentStrategiesSinkType = CurrentStrategiesSink.Type.valueOf(sinkType.toUpperCase());
         DataStreamSink<String> dataStreamSink;
 
-        switch (currentRulesSinkType) {
+        switch (currentStrategiesSinkType) {
             case KAFKA:
                 Properties kafkaProps = KafkaUtils.initProducerProperties(config);
-                String rulesExportTopic = config.get(RULES_EXPORT_TOPIC);
+                String strategiesExportTopic = config.get(STRATEGIES_EXPORT_TOPIC);
 
                 KafkaSink<String> kafkaSink =
                         KafkaSink.<String>builder()
                                 .setKafkaProducerConfig(kafkaProps)
                                 .setRecordSerializer(
                                         KafkaRecordSerializationSchema.builder()
-                                                .setTopic(rulesExportTopic)
+                                                .setTopic(strategiesExportTopic)
                                                 .setValueSerializationSchema(new SimpleStringSchema())
                                                 .build())
                                 .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
@@ -66,18 +66,18 @@ public class CurrentRulesSink {
                 break;
             default:
                 throw new IllegalArgumentException(
-                        "Source \"" + currentRulesSinkType + "\" unknown. Known values are:" + Arrays.toString(Type.values()));
+                        "Source \"" + currentStrategiesSinkType + "\" unknown. Known values are:" + Arrays.toString(Type.values()));
         }
         return dataStreamSink;
     }
 
-    public static DataStream<String> rulesStreamToJson(DataStream<Rule> alerts) {
-        return alerts.flatMap(new JsonSerializer<>(Rule.class)).name("Rules Deserialization");
+    public static DataStream<String> strategiesStreamToJson(DataStream<Strategy> alerts) {
+        return alerts.flatMap(new JsonSerializer<>(Strategy.class)).name("Strategies Deserialization");
     }
 
     public enum Type {
-        KAFKA("Current Rules Sink (Kafka)"),
-        STDOUT("Current Rules Sink (Std. Out)");
+        KAFKA("Current Strategies Sink (Kafka)"),
+        STDOUT("Current Strategies Sink (Std. Out)");
 
         private String name;
 

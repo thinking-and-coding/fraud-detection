@@ -21,7 +21,7 @@ package com.fraud_detection.core.entity;
 import com.fraud_detection.core.entity.enums.AggregatorFunctionType;
 import com.fraud_detection.core.entity.enums.ControlType;
 import com.fraud_detection.core.entity.enums.LimitOperatorType;
-import com.fraud_detection.core.entity.enums.RuleState;
+import com.fraud_detection.core.entity.enums.StrategyState;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -31,22 +31,20 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Rules representation.
+ * Strategies representation.
  */
 @EqualsAndHashCode
 @ToString
 @Data
-public class Rule {
+public class Strategy {
 
-    private Integer ruleId;
+    private Integer strategyId;
 
-    private RuleState ruleState;
+    private StrategyState strategyState;
 
     private List<String> events;
 
     private List<String> groupingKeyNames; // aggregation
-
-    private List<String> unique;
 
     private String aggregateFieldName;
 
@@ -65,7 +63,7 @@ public class Rule {
     }
 
     /**
-     * Evaluates this rule by comparing provided value with rules' limit based on limit operator type.
+     * Evaluates this strategy by comparing provided value with strategies' limit based on limit operator type.
      *
      * @param comparisonValue value to be compared with the limit
      */
@@ -89,8 +87,8 @@ public class Rule {
     }
 
     public long getWindowStartFor(Long timestamp) {
-        Long ruleWindowMillis = this.getWindowMillis();
-        return (timestamp - ruleWindowMillis);
+        Long strategyWindowMillis = this.getWindowMillis();
+        return (timestamp - strategyWindowMillis);
     }
 
 }

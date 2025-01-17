@@ -18,9 +18,9 @@
 package com.ververica.demo.backend.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ververica.demo.backend.entities.Rule;
-import com.ververica.demo.backend.model.RulePayload;
-import com.ververica.demo.backend.repositories.RuleRepository;
+import com.ververica.demo.backend.entities.Strategy;
+import com.ververica.demo.backend.model.StrategyPayload;
+import com.ververica.demo.backend.repositories.StrategyRepository;
 import java.io.IOException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import org.springframework.stereotype.Service;
 public class KafkaConsumerService {
 
   private final SimpMessagingTemplate simpTemplate;
-  private final RuleRepository ruleRepository;
+  private final StrategyRepository strategyRepository;
   private final ObjectMapper mapper = new ObjectMapper();
 
   @Value("${web-socket.topic.alerts}")
@@ -46,9 +46,9 @@ public class KafkaConsumerService {
   private String latencyWebSocketTopic;
 
   @Autowired
-  public KafkaConsumerService(SimpMessagingTemplate simpTemplate, RuleRepository ruleRepository) {
+  public KafkaConsumerService(SimpMessagingTemplate simpTemplate, StrategyRepository strategyRepository) {
     this.simpTemplate = simpTemplate;
-    this.ruleRepository = ruleRepository;
+    this.strategyRepository = strategyRepository;
   }
 
   @KafkaListener(topics = "${kafka.topic.alerts}", groupId = "alerts")
@@ -63,14 +63,14 @@ public class KafkaConsumerService {
     simpTemplate.convertAndSend(latencyWebSocketTopic, message);
   }
 
-  @KafkaListener(topics = "${kafka.topic.current-rules}", groupId = "current-rules")
-  public void templateCurrentFlinkRules(@Payload String message) throws IOException {
+  @KafkaListener(topics = "${kafka.topic.current-strategies}", groupId = "current-strategies")
+  public void templateCurrentFlinkStrategies(@Payload String message) throws IOException {
     log.info("{}", message);
-    RulePayload payload = mapper.readValue(message, RulePayload.class);
-    Integer payloadId = payload.getRuleId();
-    Optional<Rule> existingRule = ruleRepository.findById(payloadId);
-    if (!existingRule.isPresent()) {
-      ruleRepository.save(new Rule(payloadId, mapper.writeValueAsString(payload)));
+    StrategyPayload payload = mapper.readValue(message, StrategyPayload.class);
+    Integer payloadId = payload.getStrategyId();
+    Optional<Strategy> existingStrategy = strategyRepository.findById(payloadId);
+    if (!existingStrategy.isPresent()) {
+      strategyRepository.save(new Strategy(payloadId, mapper.writeValueAsString(payload)));
     }
   }
 }

@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Badge, Card, CardBody, CardHeader, Col } from "reactstrap";
 import styled from "styled-components/macro";
-import { Transaction } from "../interfaces";
+import { Event } from "../interfaces";
 import Slider from "react-rangeslider";
 import { useLocalStorage, useUpdateEffect } from "react-use";
 import { AutoSizer, List, ListRowRenderer } from "react-virtualized";
@@ -23,7 +23,7 @@ import "react-virtualized/styles.css";
 // payeeId: 20908
 // paymentAmount: 13.54
 // paymentType: "CRD"
-// transactionId: 5954524216210268000
+// eventId: 5954524216210268000
 
 export const paymentTypeMap: {
   [s: string]: IconDefinition;
@@ -33,7 +33,7 @@ export const paymentTypeMap: {
   undefined: faQuestionCircle,
 };
 
-const TransactionsCard = styled(Card)`
+const EventsCard = styled(Card)`
   width: 100%;
   height: 100%;
   border-left: 0 !important;
@@ -45,7 +45,7 @@ const TransactionsCard = styled(Card)`
   }
 `;
 
-const TransactionsHeading = styled.div`
+const EventsHeading = styled.div`
   display: flex;
   justify-content: space-between;
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
@@ -86,7 +86,7 @@ export const Payee = styled(FlexSpan)`
   justify-content: flex-start;
 `;
 
-export const Event = styled(FlexSpan)`
+export const EventName = styled(FlexSpan)`
   justify-content: center;
 `;
 
@@ -98,7 +98,7 @@ export const Beneficiary = styled(FlexSpan)`
   justify-content: flex-end;
 `;
 
-const TransactionsOverlay = styled.div`
+const EventsOverlay = styled.div`
   position: absolute;
   z-index: 10;
   background: rgba(0, 0, 0, 0.7);
@@ -122,11 +122,11 @@ const getFakeValue = (value: number) => {
   return value <= 10 ? value : value <= 20 ? (value - 10) * 10 : (value - 20) * 100;
 };
 
-export const Transactions = React.memo(
+export const Events = React.memo(
   forwardRef<HTMLDivElement, {}>((props, ref) => {
     const list = useRef<List>(null);
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const addTransaction = (transaction: Transaction) => setTransactions(state => [...state.slice(-33), transaction]);
+    const [events, setEvents] = useState<Event[]>([]);
+    const addEvent = (event: Event) => setEvents(state => [...state.slice(-33), event]);
 
     const [generatorSpeed, setGeneratorSpeed] = useLocalStorage("generatorSpeed", 1);
     const handleSliderChange = (val: number) => setGeneratorSpeed(val);
@@ -136,12 +136,12 @@ export const Transactions = React.memo(
     }, [generatorSpeed]);
 
     const renderRow: ListRowRenderer = ({ key, index, style }) => {
-      const t = transactions[index];
+      const t = events[index];
 
       return (
         <Payment key={key} style={style} className="px-2">
           <Payee>{t.payeeId}</Payee>
-          <Event>{t.event}</Event>
+          <EventName>{t.event}</EventName>
           <Details>
             <FontAwesomeIcon className="mx-1" icon={paymentTypeMap[t.paymentType]} />
             <Badge color="info">${parseFloat(t.paymentAmount.toString()).toFixed(2)}</Badge>
@@ -154,9 +154,9 @@ export const Transactions = React.memo(
 
     return (
       <>
-        <SockJsClient url="/ws/backend" topics={["/topic/transactions"]} onMessage={addTransaction} />
+        <SockJsClient url="/ws/backend" topics={["/topic/events"]} onMessage={addEvent} />
         <Col xs="2" className="d-flex flex-column px-0">
-          <TransactionsCard innerRef={ref}>
+          <EventsCard innerRef={ref}>
             <CardHeader className="d-flex align-items-center py-0 justify-content-between">
               <div style={{ width: 160 }} className="mr-3 d-inline-block">
                 <Slider
@@ -171,7 +171,7 @@ export const Transactions = React.memo(
               <span>{getFakeValue(generatorSpeed)}</span>
             </CardHeader>
             <CardBody className="p-0 mb-0" style={{ pointerEvents: "none" }}>
-              <TransactionsOverlay hidden={generatorSpeed < 16}>
+              <EventsOverlay hidden={generatorSpeed < 16}>
                 <div>
                   <Rocket>
                     <FontAwesomeIcon icon={faRocket} />
@@ -179,15 +179,15 @@ export const Transactions = React.memo(
                       🚀
                     </span> */}
                   </Rocket>
-                  <h2>Transactions per-second too high to render...</h2>
+                  <h2>Events per-second too high to render...</h2>
                 </div>
-              </TransactionsOverlay>
-              <TransactionsHeading className="px-2 py-1">
+              </EventsOverlay>
+              <EventsHeading className="px-2 py-1">
                 <span>Payer</span>
                 <span>Event</span>
                 <span>Amount</span>
                 <span>Beneficiary</span>
-              </TransactionsHeading>
+              </EventsHeading>
               <AutoSizer>
                 {({ height, width }) => (
                   <List
@@ -195,13 +195,13 @@ export const Transactions = React.memo(
                     height={height}
                     width={width}
                     rowHeight={40}
-                    rowCount={transactions.length - 1}
+                    rowCount={events.length - 1}
                     rowRenderer={renderRow}
                   />
                 )}
               </AutoSizer>
             </CardBody>
-          </TransactionsCard>
+          </EventsCard>
         </Col>
       </>
     );

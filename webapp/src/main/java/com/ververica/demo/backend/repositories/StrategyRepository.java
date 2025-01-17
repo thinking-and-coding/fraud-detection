@@ -15,28 +15,15 @@
  * limitations under the License.
  */
 
-package com.ververica.demo.backend.entities;
+package com.ververica.demo.backend.repositories;
 
-import javax.persistence.*;
+import com.ververica.demo.backend.entities.Strategy;
+import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.springframework.data.repository.CrudRepository;
 
-@Entity
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class Rule {
+public interface StrategyRepository extends CrudRepository<Strategy, Integer> {
 
-  public Rule(String rulePayload) {
-    this.rulePayload = rulePayload;
-  }
-
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Integer id;
-
-  @Column(length = 512)
-  private String rulePayload;
+  @Override
+  List<Strategy> findAll();
 }

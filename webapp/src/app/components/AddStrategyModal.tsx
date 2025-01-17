@@ -13,7 +13,7 @@ import { isArray, pick } from "lodash/fp";
 import React, { createRef, FC, FormEvent, useState, MouseEvent } from "react";
 import CreatableSelect from "react-select/creatable";
 import { Alert, Button, Input, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
-import { Rule, RulePayload } from "../interfaces/";
+import { Strategy, StrategyPayload } from "../interfaces/";
 import { FieldGroup } from "./FieldGroup";
 
 const headers = { "Content-Type": "application/json" };
@@ -24,7 +24,7 @@ const pickFields = pick([
   "groupingKeyNames",
   "limit",
   "limitOperatorType",
-  "ruleState",
+  "strategiesState",
   "events",
   "windowMinutes",
 ]);
@@ -34,8 +34,8 @@ type ResponseError = {
   message: string;
 } | null;
 
-const sampleRules: {
-  [n: number]: RulePayload;
+const sampleStrategies: {
+  [n: number]: StrategyPayload;
 } = {
   1: {
     aggregateFieldName: "paymentAmount",
@@ -44,7 +44,7 @@ const sampleRules: {
     limit: 20000000,
     limitOperatorType: "GREATER",
     windowMinutes: 43200,
-    ruleState: "ACTIVE",
+    strategyState: "ACTIVE",
     events: ["pay","refund"],
   },
    2: {
@@ -54,7 +54,7 @@ const sampleRules: {
      limit: 10000000,
      limitOperatorType: "GREATER_EQUAL",
      windowMinutes: 1440,
-     ruleState: "ACTIVE",
+     strategyState: "ACTIVE",
      events: ["pay"],
    },
   3: {
@@ -64,7 +64,7 @@ const sampleRules: {
     limit: 100,
     limitOperatorType: "GREATER_EQUAL",
     windowMinutes: 1440,
-    ruleState: "ACTIVE",
+    strategyState: "ACTIVE",
     events: ["refund"],
   },
 
@@ -76,7 +76,7 @@ const events = ["pay", "refund"];
 
 const MySelect = React.memo(CreatableSelect);
 
-export const AddRuleModal: FC<Props> = props => {
+export const AddStrategyModal: FC<Props> = props => {
   const [error, setError] = useState<ResponseError>(null);
 
   const handleClosed = () => {
@@ -86,26 +86,26 @@ export const AddRuleModal: FC<Props> = props => {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const data = pickFields(getFormData(e.target)) as RulePayload;
+    const data = pickFields(getFormData(e.target)) as StrategyPayload;
     data.groupingKeyNames = isArray(data.groupingKeyNames) ? data.groupingKeyNames : [data.groupingKeyNames];
     data.events = isArray(data.events) ? data.events : [data.events];
 
-    const rulePayload = JSON.stringify(data);
-    const body = JSON.stringify({ rulePayload });
+    const strategyPayload = JSON.stringify(data);
+    const body = JSON.stringify({ strategyPayload: strategyPayload });
 
     setError(null);
-    Axios.post<Rule>("/api/rules", body, { headers })
-      .then(response => props.setRules(rules => [...rules, { ...response.data, ref: createRef<HTMLDivElement>() }]))
+    Axios.post<Strategy>("/api/strategies", body, { headers })
+      .then(response => props.setStrategies(strategies => [...strategies, { ...response.data, ref: createRef<HTMLDivElement>() }]))
       .then(props.onClosed)
       .catch(setError);
   };
 
-  const postSampleRule = (ruleId: number) => (e: MouseEvent) => {
-    const rulePayload = JSON.stringify(sampleRules[ruleId]);
-    const body = JSON.stringify({ rulePayload });
+  const postSampleStrategy = (strategyId: number) => (e: MouseEvent) => {
+    const strategyPayload = JSON.stringify(sampleStrategies[strategyId]);
+    const body = JSON.stringify({ strategyPayload });
 
-    Axios.post<Rule>("/api/rules", body, { headers })
-      .then(response => props.setRules(rules => [...rules, { ...response.data, ref: createRef<HTMLDivElement>() }]))
+    Axios.post<Strategy>("/api/strategies", body, { headers })
+      .then(response => props.setStrategies(strategies => [...strategies, { ...response.data, ref: createRef<HTMLDivElement>() }]))
       .then(props.onClosed)
       .catch(setError);
   };
@@ -120,11 +120,11 @@ export const AddRuleModal: FC<Props> = props => {
       size="lg"
     >
       <form onSubmit={handleSubmit}>
-        <ModalHeader toggle={props.toggle}>Add a new Rule</ModalHeader>
+        <ModalHeader toggle={props.toggle}>Add a new Strategy</ModalHeader>
         <ModalBody>
           {error && <Alert color="danger">{error.error + ": " + error.message}</Alert>}
-          <FieldGroup label="ruleState" icon={faInfoCircle}>
-            <Input type="select" name="ruleState" bsSize="sm">
+          <FieldGroup label="strategyState" icon={faInfoCircle}>
+            <Input type="select" name="strategyState" bsSize="sm">
               <option value="ACTIVE">ACTIVE</option>
               <option value="PAUSE">PAUSE</option>
               <option value="DELETE">DELETE</option>
@@ -189,14 +189,14 @@ export const AddRuleModal: FC<Props> = props => {
         </ModalBody>
         <ModalFooter className="justify-content-between">
           <div>
-            <Button color="secondary" onClick={postSampleRule(1)} size="sm" className="mr-2">
-              Sample Rule 1
+            <Button color="secondary" onClick={postSampleStrategy(1)} size="sm" className="mr-2">
+              Sample Strategy 1
             </Button>
-            <Button color="secondary" onClick={postSampleRule(2)} size="sm" className="mr-2">
-              Sample Rule 2
+            <Button color="secondary" onClick={postSampleStrategy(2)} size="sm" className="mr-2">
+              Sample Strategy 2
             </Button>
-            <Button color="secondary" onClick={postSampleRule(3)} size="sm" className="mr-2">
-              Sample Rule 3
+            <Button color="secondary" onClick={postSampleStrategy(3)} size="sm" className="mr-2">
+              Sample Strategy 3
             </Button>
           </div>
           <div>
@@ -217,5 +217,5 @@ interface Props {
   toggle: () => void;
   isOpen: boolean;
   onClosed: () => void;
-  setRules: (fn: (rules: Rule[]) => Rule[]) => void;
+  setStrategies: (fn: (strategies: Strategy[]) => Strategy[]) => void;
 }

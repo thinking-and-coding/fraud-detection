@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert } from "../interfaces";
 import { CenteredContainer } from "./CenteredContainer";
 import { ScrollingCol } from "./App";
-import { Payment, Payee, Event, Details, Beneficiary, paymentTypeMap } from "./Transactions";
+import { Payment, Payee, EventName, Details, Beneficiary, paymentTypeMap } from "./Events";
 import { Line } from "app/utils/useLines";
 
 const AlertTable = styled(Table)`
@@ -65,14 +65,14 @@ export const Alerts: FC<Props> = props => {
               <AlertTable size="sm" bordered={true}>
                 <tbody>
                   <tr>
-                    <td>Transaction</td>
-                    <td>{alert.triggeringEvent.transactionId}</td>
+                    <td>Event</td>
+                    <td>{alert.triggeringEvent.eventId}</td>
                   </tr>
                   <tr>
                     <td colSpan={2} className="p-0" style={{ borderBottomWidth: 3 }}>
                       <Payment className="px-2">
                         <Payee>{t.payeeId}</Payee>
-                        <Event>{t.event}</Event>
+                        <EventName>{t.event}</EventName>
                         <Details>
                           <FontAwesomeIcon className="mx-1" icon={paymentTypeMap[t.paymentType]} />
                           <Badge color="info">${parseFloat(t.paymentAmount.toString()).toFixed(2)}</Badge>
@@ -83,8 +83,8 @@ export const Alerts: FC<Props> = props => {
                     </td>
                   </tr>
                   <tr>
-                    <td>Rule</td>
-                    <td>{alert.ruleId}</td>
+                    <td>Strategy</td>
+                    <td>{alert.strategyId}</td>
                   </tr>
                   <tr>
                     <td>Amount</td>
@@ -92,15 +92,15 @@ export const Alerts: FC<Props> = props => {
                   </tr>
                   <tr>
                     <td>Of</td>
-                    <td>{alert.violatedRule.aggregateFieldName}</td>
+                    <td>{alert.violatedStrategy.aggregateFieldName}</td>
                   </tr>
                 </tbody>
               </AlertTable>
             </CardBody>
             <CardFooter style={{ padding: "0.3rem" }}>
-              Alert for Rule <em>{alert.ruleId}</em> caused by Transaction{" "}
-              <em>{alert.triggeringEvent.transactionId}</em> with Amount <em>{alert.triggeringValue}</em> of{" "}
-              <em>{alert.violatedRule.aggregateFieldName}</em>.
+              Alert for Strategy <em>{alert.strategyId}</em> caused by Event{" "}
+              <em>{alert.triggeringEvent.eventId}</em> with Amount <em>{alert.triggeringValue}</em> of{" "}
+              <em>{alert.violatedStrategy.aggregateFieldName}</em>.
             </CardFooter>
           </CenteredContainer>
         );

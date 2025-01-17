@@ -17,8 +17,11 @@
 
 package com.ververica.demo.backend.services;
 
-import com.ververica.demo.backend.datasource.Transaction;
+import com.ververica.demo.backend.datasource.Event;
+
 import java.util.function.Consumer;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,27 +30,25 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-public class KafkaTransactionsPusher implements Consumer<Transaction> {
+@Data
+public class KafkaEventsPusher implements Consumer<Event> {
 
   private KafkaTemplate<String, Object> kafkaTemplate;
-  private Transaction lastTransaction;
+  private Event lastEvent;
 
-  @Value("${kafka.topic.transactions}")
+  @Value("${kafka.topic.events}")
   private String topic;
 
   @Autowired
-  public KafkaTransactionsPusher(KafkaTemplate<String, Object> kafkaTemplateForJson) {
+  public KafkaEventsPusher(KafkaTemplate<String, Object> kafkaTemplateForJson) {
     this.kafkaTemplate = kafkaTemplateForJson;
   }
 
   @Override
-  public void accept(Transaction transaction) {
-    lastTransaction = transaction;
-    log.debug("{}", transaction);
-    kafkaTemplate.send(topic, transaction);
+  public void accept(Event event) {
+    lastEvent = event;
+    log.debug("{}", event);
+    kafkaTemplate.send(topic, event);
   }
 
-  public Transaction getLastTransaction() {
-    return lastTransaction;
-  }
 }

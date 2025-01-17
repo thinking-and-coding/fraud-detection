@@ -16,7 +16,7 @@ import React, { FC } from "react";
 
 import { Badge, Button, CardBody, CardFooter, CardHeader, Table } from "reactstrap";
 import styled from "styled-components/macro";
-import { Alert, Rule } from "../interfaces";
+import { Alert, Strategy } from "../interfaces";
 import { CenteredContainer } from "./CenteredContainer";
 import { ScrollingCol } from "./App";
 import { Line } from "app/utils/useLines";
@@ -54,12 +54,12 @@ const seperator: {
   NOT_EQUAL: "to",
 };
 
-const RuleTitle = styled.div`
+const StrategyTitle = styled.div`
   display: flex;
   align-items: center;
 `;
 
-const RuleTable = styled(Table)`
+const StrategyTable = styled(Table)`
   && {
     width: calc(100% + 1px);
     border: 0;
@@ -95,26 +95,26 @@ const fields = [
   "windowMinutes",
 ];
 
-// const omitFields = omit(["ruleId", "ruleState", "unique"]);
+// const omitFields = omit(["strategyId", "strategyState"]);
 
-const hasAlert = (alerts: Alert[], rule: Rule) => alerts.some(alert => alert.ruleId === rule.id);
+const hasAlert = (alerts: Alert[], strategy: Strategy) => alerts.some(alert => alert.strategyId === strategy.id);
 
-export const Rules: FC<Props> = props => {
+export const Strategies: FC<Props> = props => {
   const handleDelete = (id: number) => () => {
-    Axios.delete(`/api/rules/${id}`).then(props.clearRule(id));
+    Axios.delete(`/api/strategies/${id}`).then(props.clearStrategy(id));
   };
 
   const handleScroll = () => {
-    props.ruleLines.forEach(line => line.line.position());
+    props.strategyLines.forEach(line => line.line.position());
     props.alertLines.forEach(line => line.line.position());
   };
 
-  const tooManyRules = props.rules.length > 3;
+  const tooManyStrategies = props.strategies.length > 3;
 
   return (
     <ScrollingCol xs={{ size: 5, offset: 1 }} onScroll={handleScroll}>
-      {props.rules.map(rule => {
-        const payload = JSON.parse(rule.rulePayload);
+      {props.strategies.map(strategy => {
+        const payload = JSON.parse(strategy.strategyPayload);
 
         if (!payload) {
           return null;
@@ -122,28 +122,28 @@ export const Rules: FC<Props> = props => {
 
         return (
           <CenteredContainer
-            ref={rule.ref}
-            key={rule.id}
-            tooManyItems={tooManyRules}
+            ref={strategy.ref}
+            key={strategy.id}
+            tooManyItems={tooManyStrategies}
             style={{
-              borderColor: hasAlert(props.alerts, rule) ? "#dc3545" : undefined,
-              borderWidth: hasAlert(props.alerts, rule) ? 2 : 1,
+              borderColor: hasAlert(props.alerts, strategy) ? "#dc3545" : undefined,
+              borderWidth: hasAlert(props.alerts, strategy) ? 2 : 1,
             }}
           >
             <CardHeader className="d-flex justify-content-between align-items-center" style={{ padding: "0.3rem" }}>
-              <RuleTitle>
+              <StrategyTitle>
                 <FontAwesomeIcon icon={faInfoCircle} fixedWidth={true} className="mr-2" />
-                Rule #{rule.id}{" "}
-                <Badge color={badgeColorMap[payload.ruleState]} className="ml-2">
-                  {payload.ruleState}
+                Strategy #{strategy.id}{" "}
+                <Badge color={badgeColorMap[payload.strategyPayload]} className="ml-2">
+                  {payload.strategyPayload}
                 </Badge>
-              </RuleTitle>
-              <Button size="sm" color="danger" outline={true} onClick={handleDelete(rule.id)}>
+              </StrategyTitle>
+              <Button size="sm" color="danger" outline={true} onClick={handleDelete(strategy.id)}>
                 Delete
               </Button>
             </CardHeader>
             <CardBody className="p-0">
-              <RuleTable size="sm" bordered={true}>
+              <StrategyTable size="sm" bordered={true}>
                 <tbody>
                   {fields.map(key => {
                     const field = payload[key];
@@ -158,7 +158,7 @@ export const Rules: FC<Props> = props => {
                     );
                   })}
                 </tbody>
-              </RuleTable>
+              </StrategyTable>
             </CardBody>
             <CardFooter style={{ padding: "0.3rem" }}>
               <em>{payload.aggregatorFunctionType}</em> of <em>{payload.aggregateFieldName}</em> aggregated by "
@@ -175,8 +175,8 @@ export const Rules: FC<Props> = props => {
 
 interface Props {
   alerts: Alert[];
-  rules: Rule[];
-  clearRule: (id: number) => () => void;
-  ruleLines: Line[];
+  strategies: Strategy[];
+  clearStrategy: (id: number) => () => void;
+  strategyLines: Line[];
   alertLines: Line[];
 }

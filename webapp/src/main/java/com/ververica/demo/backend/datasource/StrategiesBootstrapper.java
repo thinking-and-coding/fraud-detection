@@ -17,9 +17,9 @@
 
 package com.ververica.demo.backend.datasource;
 
-import com.ververica.demo.backend.entities.Rule;
-import com.ververica.demo.backend.repositories.RuleRepository;
-import com.ververica.demo.backend.services.FlinkRulesService;
+import com.ververica.demo.backend.entities.Strategy;
+import com.ververica.demo.backend.repositories.StrategyRepository;
+import com.ververica.demo.backend.services.FlinkStrategiesService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -27,76 +27,76 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RulesBootstrapper implements ApplicationRunner {
+public class StrategiesBootstrapper implements ApplicationRunner {
 
-  private RuleRepository ruleRepository;
-  private FlinkRulesService flinkRulesService;
+  private StrategyRepository strategyRepository;
+  private FlinkStrategiesService flinkStrategiesService;
 
   @Autowired
-  public RulesBootstrapper(RuleRepository userRepository, FlinkRulesService flinkRulesService) {
-    this.ruleRepository = userRepository;
-    this.flinkRulesService = flinkRulesService;
+  public StrategiesBootstrapper(StrategyRepository strategyRepository, FlinkStrategiesService flinkStrategiesService) {
+    this.strategyRepository = strategyRepository;
+    this.flinkStrategiesService = flinkStrategiesService;
   }
 
   public void run(ApplicationArguments args) {
     String payload1 =
-        "{\"ruleId\":\"1\","
+        "{\"strategyId\":\"1\","
             + "\"aggregateFieldName\":\"paymentAmount\","
             + "\"aggregatorFunctionType\":\"SUM\","
             + "\"groupingKeyNames\":[\"payeeId\", \"beneficiaryId\"],"
             + "\"limit\":\"20000000\","
             + "\"limitOperatorType\":\"GREATER\","
-            + "\"ruleState\":\"ACTIVE\","
+            + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"pay\",\"refund\"],"
             + "\"windowMinutes\":\"43200\"}";
 
-    Rule rule1 = new Rule(payload1);
+    Strategy strategy1 = new Strategy(payload1);
 
     String payload2 =
-        "{\"ruleId\":\"2\","
+        "{\"strategyId\":\"2\","
             + "\"aggregateFieldName\":\"COUNT_FLINK\","
             + "\"aggregatorFunctionType\":\"SUM\","
             + "\"groupingKeyNames\":[\"paymentType\"],"
             + "\"limit\":\"300\","
             + "\"limitOperatorType\":\"LESS\","
-            + "\"ruleState\":\"PAUSE\","
+            + "\"strategyState\":\"PAUSE\","
             + "\"events\":[\"pay\",\"refund\"],"
             + "\"windowMinutes\":\"1440\"}";
 
-    Rule rule2 = new Rule(payload2);
+    Strategy strategy2 = new Strategy(payload2);
 
     String payload3 =
-        "{\"ruleId\":\"3\","
+        "{\"strategyId\":\"3\","
             + "\"aggregateFieldName\":\"paymentAmount\","
             + "\"aggregatorFunctionType\":\"SUM\","
             + "\"groupingKeyNames\":[\"beneficiaryId\"],"
             + "\"limit\":\"10000000\","
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
-            + "\"ruleState\":\"ACTIVE\","
+            + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"pay\"],"
             + "\"windowMinutes\":\"1440\"}";
 
-    Rule rule3 = new Rule(payload3);
+    Strategy strategy3 = new Strategy(payload3);
 
     String payload4 =
-        "{\"ruleId\":\"4\","
+        "{\"strategyId\":\"4\","
             + "\"aggregateFieldName\":\"COUNT_WITH_RESET_FLINK\","
             + "\"aggregatorFunctionType\":\"SUM\","
             + "\"groupingKeyNames\":[\"paymentType\"],"
             + "\"limit\":\"100\","
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
-            + "\"ruleState\":\"ACTIVE\","
+            + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"refund\"],"
             + "\"windowMinutes\":\"1440\"}";
 
-    Rule rule4 = new Rule(payload4);
+    Strategy strategy4 = new Strategy(payload4);
 
-    ruleRepository.save(rule1);
-    ruleRepository.save(rule2);
-    ruleRepository.save(rule3);
-    ruleRepository.save(rule4);
+    strategyRepository.save(strategy1);
+    strategyRepository.save(strategy2);
+    strategyRepository.save(strategy3);
+    strategyRepository.save(strategy4);
 
-    List<Rule> rules = ruleRepository.findAll();
-    rules.forEach(rule -> flinkRulesService.addRule(rule));
+    List<Strategy> strategies = strategyRepository.findAll();
+    strategies.forEach(strategy -> flinkStrategiesService.addStrategy(strategy));
   }
 }

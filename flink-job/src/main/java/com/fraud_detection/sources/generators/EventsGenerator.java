@@ -18,14 +18,14 @@
 
 package com.fraud_detection.sources.generators;
 
-import com.fraud_detection.core.entity.Transaction;
-import com.fraud_detection.core.entity.Transaction.PaymentType;
+import com.fraud_detection.core.entity.Event;
+import com.fraud_detection.core.entity.Event.PaymentType;
 
 import java.math.BigDecimal;
 import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class TransactionsGenerator extends BaseGenerator<Transaction> {
+public class EventsGenerator extends BaseGenerator<Event> {
 
   private static long MAX_PAYEE_ID = 100000;
   private static long MAX_BENEFICIARY_ID = 100000;
@@ -33,13 +33,13 @@ public class TransactionsGenerator extends BaseGenerator<Transaction> {
   private static double MIN_PAYMENT_AMOUNT = 5d;
   private static double MAX_PAYMENT_AMOUNT = 20d;
 
-  public TransactionsGenerator(int maxRecordsPerSecond) {
+  public EventsGenerator(int maxRecordsPerSecond) {
     super(maxRecordsPerSecond);
   }
 
   @Override
-  public Transaction randomEvent(SplittableRandom rnd, long id) {
-    long transactionId = rnd.nextLong(Long.MAX_VALUE);
+  public Event randomEvent(SplittableRandom rnd, long id) {
+    long eventId = rnd.nextLong(Long.MAX_VALUE);
     long payeeId = rnd.nextLong(MAX_PAYEE_ID);
     long beneficiaryId = rnd.nextLong(MAX_BENEFICIARY_ID);
     double paymentAmountDouble =
@@ -47,18 +47,18 @@ public class TransactionsGenerator extends BaseGenerator<Transaction> {
     paymentAmountDouble = Math.floor(paymentAmountDouble * 100) / 100;
     BigDecimal paymentAmount = BigDecimal.valueOf(paymentAmountDouble);
 
-    Transaction transaction =
-        Transaction.builder()
-            .transactionId(transactionId)
+    Event event =
+        Event.builder()
+            .eventId(eventId)
             .payeeId(payeeId)
             .beneficiaryId(beneficiaryId)
             .paymentAmount(paymentAmount)
-            .paymentType(paymentType(transactionId))
+            .paymentType(paymentType(eventId))
             .eventTime(System.currentTimeMillis())
             .ingestionTimestamp(System.currentTimeMillis())
             .build();
 
-    return transaction;
+    return event;
   }
 
   private PaymentType paymentType(long id) {

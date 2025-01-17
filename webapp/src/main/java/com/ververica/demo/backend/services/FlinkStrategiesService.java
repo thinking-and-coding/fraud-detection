@@ -19,38 +19,38 @@ package com.ververica.demo.backend.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ververica.demo.backend.entities.Rule;
-import com.ververica.demo.backend.model.RulePayload;
-import com.ververica.demo.backend.model.RulePayload.RuleState;
+import com.ververica.demo.backend.entities.Strategy;
+import com.ververica.demo.backend.model.StrategyPayload;
+import com.ververica.demo.backend.model.StrategyPayload.StrategyState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FlinkRulesService {
+public class FlinkStrategiesService {
 
   private KafkaTemplate<String, String> kafkaTemplate;
 
-  @Value("${kafka.topic.rules}")
+  @Value("${kafka.topic.strategies}")
   private String topic;
 
   private final ObjectMapper mapper = new ObjectMapper();
 
   @Autowired
-  public FlinkRulesService(KafkaTemplate<String, String> kafkaTemplate) {
+  public FlinkStrategiesService(KafkaTemplate<String, String> kafkaTemplate) {
     this.kafkaTemplate = kafkaTemplate;
   }
 
-  public void addRule(Rule rule) {
-    String payload = rule.getRulePayload();
+  public void addStrategy(Strategy strategy) {
+    String payload = strategy.getStrategyPayload();
     kafkaTemplate.send(topic, payload);
   }
 
-  public void deleteRule(int ruleId) throws JsonProcessingException {
-    RulePayload payload = new RulePayload();
-    payload.setRuleId(ruleId);
-    payload.setRuleState(RuleState.DELETE);
+  public void deleteStrategy(int strategyId) throws JsonProcessingException {
+    StrategyPayload payload = new StrategyPayload();
+    payload.setStrategyId(strategyId);
+    payload.setStrategyState(StrategyState.DELETE);
     String payloadJson = mapper.writeValueAsString(payload);
     kafkaTemplate.send(topic, payloadJson);
   }

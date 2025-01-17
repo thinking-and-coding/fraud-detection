@@ -22,7 +22,7 @@ npm start
 Two URLs:
 
 ```
-http://localhost:5656/transactions
+http://localhost:5656/events
 http://localhost:5656/temerature
 ```
 
@@ -32,16 +32,15 @@ Swagger is available under:
 http://localhost:5656/swagger-ui.html
 ```
 
-Example Rule JSON:
+Example Strategy JSON:
 
 ```
 {
-   "ruleId":1,
-   "ruleState":"ACTIVE",
+   "strategyId":1,
+   "strategyState":"ACTIVE",
    "groupingKeyNames":[
       "paymentType"
    ],
-   "unique":[],
    "aggregateFieldName":"paymentAmount",
    "aggregatorFunctionType":"SUM",
    "limitOperatorType":"GREATER",
@@ -53,7 +52,7 @@ Example Rule JSON:
 where
 
 ```
-ruleState in ["ACTIVE", "PAUSE", "DELETE"]
+strategyState in ["ACTIVE", "PAUSE", "DELETE"]
 aggregateFunctionType in [SUM, AVG, MIN, MAX]
 limitOperatorType in [EQUAL("="), NOT_EQUAL("!="), GREATER_EQUAL(">="), LESS_EQUAL("<="), GREATER(">"),LESS("<")]
 ```

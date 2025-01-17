@@ -19,9 +19,9 @@
 package com.fraud_detection.sources;
 
 import com.fraud_detection.config.Config;
+import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.utils.KafkaUtils;
-import com.fraud_detection.core.entity.Rule;
-import com.fraud_detection.core.operators.RuleDeserializer;
+import com.fraud_detection.core.operators.StrategiesDeserializer;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -33,21 +33,21 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import java.time.Duration;
 import java.util.Properties;
 
-import static com.fraud_detection.config.Parameters.RULES_TOPIC;
+import static com.fraud_detection.config.Parameters.STRATEGIES_TOPIC;
 
-public class RulesSource {
+public class StrategiesSource {
 
-    private static final int RULES_STREAM_PARALLELISM = 1;
+    private static final int STRATEGIES_STREAM_PARALLELISM = 1;
 
-    public static DataStreamSource<String> initRulesSource(Config config, StreamExecutionEnvironment env) {
+    public static DataStreamSource<String> initStrategiesSource(Config config, StreamExecutionEnvironment env) {
 
         Properties kafkaProps = KafkaUtils.initConsumerProperties(config);
-        String rulesTopic = config.get(RULES_TOPIC);
+        String strategiesTopic = config.get(STRATEGIES_TOPIC);
 
         KafkaSource<String> kafkaSource = KafkaSource
                 .<String>builder()
                 .setProperties(kafkaProps)
-                .setTopics(rulesTopic)
+                .setTopics(strategiesTopic)
                 .setStartingOffsets(OffsetsInitializer.latest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
@@ -55,20 +55,20 @@ public class RulesSource {
         // NOTE: Idiomatically, watermarks should be assigned here, but this done later
         // because of the mix of the new Source (Kafka) and SourceFunction-based interfaces.
         // TODO: refactor when FLIP-238 is added
-        DataStreamSource<String> dataStreamSource = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), "Rules Kafka Source");
+        DataStreamSource<String> dataStreamSource = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), "Strategies Kafka Source");
 
         return dataStreamSource;
     }
 
-    public static DataStream<Rule> stringsStreamToRules(DataStream<String> ruleStrings) {
-        return ruleStrings
-                .flatMap(new RuleDeserializer())
-                .name("Rule Deserialization")
-                .setParallelism(RULES_STREAM_PARALLELISM)
+    public static DataStream<Strategy> stringsStreamToStrategies(DataStream<String> strategyStrings) {
+        return strategyStrings
+                .flatMap(new StrategiesDeserializer())
+                .name("Strategy Deserialization")
+                .setParallelism(STRATEGIES_STREAM_PARALLELISM)
                 .assignTimestampsAndWatermarks(
                         WatermarkStrategy
-                        .<Rule>forBoundedOutOfOrderness(Duration.ofMillis(0))
-                        .withTimestampAssigner((event, timestamp) -> Long.MAX_VALUE)
+                        .<Strategy>forBoundedOutOfOrderness(Duration.ofMillis(0))
+                        .withTimestampAssigner((strategy, timestamp) -> Long.MAX_VALUE)
                 );
     }
 }
