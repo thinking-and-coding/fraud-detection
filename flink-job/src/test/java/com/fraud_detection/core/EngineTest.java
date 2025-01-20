@@ -104,9 +104,9 @@ public class EngineTest {
     Event event2 = Event.fromString("2,refund,2013-01-01 00:00:01,1001,1002,CRD,19,1");
     Event event3 = Event.fromString("3,pay,2013-01-01 00:00:02,1001,1002,CRD,2,1");
 
-    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "CSH", 1);
-    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "CRD", 1);
-    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "CRD", 1);
+    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "{paymentType=CSH}", 1);
+    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "{paymentType=CRD}", 1);
+    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "{paymentType=CRD}", 1);
 
     try (BroadcastStreamKeyedOperatorTestHarness<
             String, Keyed<Event, String, Integer>, Strategy, Alert>
@@ -126,9 +126,9 @@ public class EngineTest {
 
       ConcurrentLinkedQueue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
       Alert<Event, BigDecimal> alert1 =
-          new Alert<>(strategy1.getStrategyId(), strategy1, "CSH", event1, BigDecimal.valueOf(22));
+          new Alert<>(strategy1.getStrategyId(), strategy1, "{paymentType=CSH}", event1, BigDecimal.valueOf(22));
       Alert<Event, BigDecimal> alert2 =
-          new Alert<>(strategy1.getStrategyId(), strategy1, "CRD", event3, BigDecimal.valueOf(21));
+          new Alert<>(strategy1.getStrategyId(), strategy1, "{paymentType=CRD}", event3, BigDecimal.valueOf(21));
 
       expectedOutput.add(new StreamRecord<>(alert1, 15L));
       expectedOutput.add(new StreamRecord<>(alert2, 17L));

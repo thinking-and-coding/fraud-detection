@@ -108,7 +108,7 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
 
             ctx.output(
                 Descriptors.demoSinkTag,
-                "Strategy "
+                "Engine Strategy "
                     + strategy.getStrategyId()
                     + " | "
                     + value.getKey()

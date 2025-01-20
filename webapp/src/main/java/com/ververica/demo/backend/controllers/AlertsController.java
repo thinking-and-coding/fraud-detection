@@ -26,6 +26,8 @@ import com.ververica.demo.backend.model.Alert;
 import com.ververica.demo.backend.repositories.StrategyRepository;
 import com.ververica.demo.backend.services.KafkaEventsPusher;
 import java.math.BigDecimal;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
 public class AlertsController {
@@ -70,6 +73,7 @@ public class AlertsController {
 
     simpSender.convertAndSend(alertsWebSocketTopic, result);
 
+    log.info("alert string:{}", result);
     return alert;
   }
 }
