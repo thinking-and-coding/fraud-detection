@@ -19,59 +19,32 @@
 package com.fraud_detection.sources.generators;
 
 import com.fraud_detection.core.entity.Event;
-import com.fraud_detection.core.entity.Event.PaymentType;
 
 import java.math.BigDecimal;
-import java.util.SplittableRandom;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class EventsGenerator extends BaseGenerator<Event> {
 
-  private static long MAX_PAYEE_ID = 100000;
-  private static long MAX_BENEFICIARY_ID = 100000;
+    private static final List<String> EVENT_LIST = new ArrayList<>(Arrays.asList("pay", "refund", "open", "close"));
 
-  private static double MIN_PAYMENT_AMOUNT = 5d;
-  private static double MAX_PAYMENT_AMOUNT = 20d;
+    private static final List<String> CHARACTOR_LIST = new ArrayList<>(Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H"));
 
-  public EventsGenerator(int maxRecordsPerSecond) {
-    super(maxRecordsPerSecond);
-  }
-
-  @Override
-  public Event randomEvent(SplittableRandom rnd, long id) {
-    long eventId = rnd.nextLong(Long.MAX_VALUE);
-    String eventName = rnd.nextInt(0, 2) > 0 ? "pay" : "refund";
-    long payeeId = rnd.nextLong(MAX_PAYEE_ID);
-    long beneficiaryId = rnd.nextLong(MAX_BENEFICIARY_ID);
-    double paymentAmountDouble =
-        ThreadLocalRandom.current().nextDouble(MIN_PAYMENT_AMOUNT, MAX_PAYMENT_AMOUNT);
-    paymentAmountDouble = Math.floor(paymentAmountDouble * 100) / 100;
-    BigDecimal paymentAmount = BigDecimal.valueOf(paymentAmountDouble);
-
-    Event event =
-        Event.builder()
-            .eventId(eventId)
-            .eventName(eventName)
-            .payeeId(payeeId)
-            .beneficiaryId(beneficiaryId)
-            .paymentAmount(paymentAmount)
-            .paymentType(paymentType(eventId))
-            .eventTime(System.currentTimeMillis())
-            .ingestionTimestamp(System.currentTimeMillis())
-            .build();
-
-    return event;
-  }
-
-  private PaymentType paymentType(long id) {
-    int name = (int) (id % 2);
-    switch (name) {
-      case 0:
-        return PaymentType.CRD;
-      case 1:
-        return PaymentType.CSH;
-      default:
-        throw new IllegalStateException("");
+    public EventsGenerator(int maxRecordsPerSecond) {
+        super(maxRecordsPerSecond);
     }
-  }
+
+    @Override
+    public Event randomEvent(SplittableRandom rnd, long id) {
+        return Event
+                .builder()
+                .id(UUID.randomUUID().toString())
+                .event(EVENT_LIST.get(rnd.nextInt(EVENT_LIST.size())))
+                .accountUuid(CHARACTOR_LIST.get(rnd.nextInt(CHARACTOR_LIST.size())))
+                .vtUuid(CHARACTOR_LIST.get(rnd.nextInt(CHARACTOR_LIST.size())))
+                .timestamp(System.currentTimeMillis())
+                .ingestionTimestamp(System.currentTimeMillis())
+                .build();
+    }
+
 }

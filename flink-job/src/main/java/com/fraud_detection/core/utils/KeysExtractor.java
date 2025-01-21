@@ -60,10 +60,15 @@ public class KeysExtractor {
     return StringUtils.EMPTY;
   }
 
-  private static void appendKeyValue(StringBuilder sb, Object object, String fieldName)
-      throws IllegalAccessException, NoSuchFieldException {
-    sb.append(fieldName);
-    sb.append("=");
-    sb.append(FieldsExtractor.getFieldAsString(object, fieldName));
+  private static void appendKeyValue(StringBuilder sb, Object object, String fieldName) throws IllegalAccessException, NoSuchFieldException {
+    if (fieldName.startsWith("metadata.")) {
+      sb.append(fieldName);
+      sb.append("=");
+      sb.append(FieldsExtractor.getMapFieldAsString(object, fieldName));
+    } else {
+      sb.append(fieldName);
+      sb.append("=");
+      sb.append(FieldsExtractor.getFieldAsString(object, fieldName));
+    }
   }
 }

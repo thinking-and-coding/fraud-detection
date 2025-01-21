@@ -20,32 +20,42 @@ package com.fraud_detection.core.utils;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.util.Map;
 
 public class FieldsExtractor {
 
-  public static String getFieldAsString(Object object, String fieldName)
-      throws IllegalAccessException, NoSuchFieldException {
-    Class cls = object.getClass();
-    Field field = cls.getField(fieldName);
-    return field.get(object).toString();
+    public static String getFieldAsString(Object object, String fieldName) throws IllegalAccessException, NoSuchFieldException {
+        Class<?> cls = object.getClass();
+        Field field = cls.getField(fieldName);
+        return field.get(object).toString();
+    }
+
+    public static BigDecimal getBigDecimalByName(Object object, String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        return new BigDecimal(getFieldAsString(object, fieldName));
+    }
+
+    public static String getMapFieldAsString(Object object, String mapFieldName) throws IllegalAccessException, NoSuchFieldException {
+        Class<?> cls = object.getClass();
+        // 使用反射获取 metadata 字段
+        String[] fieldNames = mapFieldName.split("\\.");
+        Field metadataField = cls.getDeclaredField(fieldNames[0]);
+        metadataField.setAccessible(true);
+
+        // 获取 metadata 的值并强制转换为 Map
+        Map<String, Object> metadata = (Map<String, Object>) metadataField.get(object);
+
+        // 从 metadata 中获取指定属性值
+        Object mapValue = metadata.get(fieldNames[1]);
+        return mapValue.toString();
+    }
+
+  public static BigDecimal getBigDecimalByMapName(Object object, String fieldName) throws NoSuchFieldException, IllegalAccessException {
+    return new BigDecimal(getMapFieldAsString(object, fieldName));
   }
 
-  public static double getDoubleByName(String fieldName, Object object)
-      throws NoSuchFieldException, IllegalAccessException {
-    Field field = object.getClass().getField(fieldName);
-    return (double) field.get(object);
-  }
-
-  public static BigDecimal getBigDecimalByName(String fieldName, Object object)
-      throws NoSuchFieldException, IllegalAccessException {
-    Field field = object.getClass().getField(fieldName);
-    return new BigDecimal(field.get(object).toString());
-  }
-
-  @SuppressWarnings("unchecked")
-  public static <T> T getByKeyAs(String keyName, Object object)
-      throws NoSuchFieldException, IllegalAccessException {
-    Field field = object.getClass().getField(keyName);
-    return (T) field.get(object);
-  }
+    @SuppressWarnings("unchecked")
+    public static <T> T getByKeyAs(String keyName, Object object) throws NoSuchFieldException, IllegalAccessException {
+        Field field = object.getClass().getField(keyName);
+        return (T) field.get(object);
+    }
 }

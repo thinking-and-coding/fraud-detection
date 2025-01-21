@@ -80,9 +80,9 @@ public class EventsSource {
   public static DataStream<Event> stringsStreamToEvents(
       DataStream<String> eventStrings) {
     return eventStrings
-        .flatMap(new JsonDeserializer<Event>(Event.class))
+        .flatMap(new JsonDeserializer<>(Event.class))
         .returns(Event.class)
-        .flatMap(new TimeStamper<Event>())
+        .flatMap(new TimeStamper<>())
         .returns(Event.class)
         .name("Events Deserialization");
   }

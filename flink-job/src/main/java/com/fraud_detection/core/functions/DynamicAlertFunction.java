@@ -77,7 +77,7 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
     @Override
     public void processElement(Keyed<Event, String, Integer> value, ReadOnlyContext ctx, Collector<Alert> out) throws Exception {
         Event event = value.getWrapped();
-        long currentEventTime = event.getEventTime();
+        long currentEventTime = event.getTimestamp();
 
         ProcessingUtils.addToStateValuesSet(windowState, currentEventTime, event);
 
@@ -170,11 +170,17 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
     private void aggregateValuesInState(Long stateEventTime, SimpleAccumulator<BigDecimal> aggregator, Strategy strategy) throws Exception {
         Set<Event> inWindow = windowState.get(stateEventTime);
         for (Event event : inWindow) {
-            if (strategy.getEvents().contains(event.getEventName())) {
+            if (strategy.getEvents().contains(event.getEvent())) {
                 if (COUNT.equals(strategy.getAggregateFieldName()) || COUNT_WITH_RESET.equals(strategy.getAggregateFieldName())) {
                     aggregator.add(BigDecimal.ONE);
                 } else {
-                    BigDecimal aggregatedValue = FieldsExtractor.getBigDecimalByName(strategy.getAggregateFieldName(), event);
+                    BigDecimal aggregatedValue;
+                    if (strategy.getAggregateFieldName().startsWith("metadata.")) {
+                        aggregatedValue = FieldsExtractor.getBigDecimalByMapName(event, strategy.getAggregateFieldName());
+                    }
+                    else{
+                        aggregatedValue = FieldsExtractor.getBigDecimalByName(event, strategy.getAggregateFieldName());
+                    }
                     aggregator.add(aggregatedValue);
                 }
             }

@@ -129,7 +129,7 @@ public class Engine {
         EventsSource.stringsStreamToEvents(eventsStringsStream);
     return eventsStream.assignTimestampsAndWatermarks(WatermarkStrategy
             .<Event>forBoundedOutOfOrderness(Duration.ofMillis(config.get(OUT_OF_ORDERLESS)))
-            .withTimestampAssigner((event, timestamp) -> event.getEventTime()));
+            .withTimestampAssigner((event, timestamp) -> event.getTimestamp()));
   }
 
   private DataStream<Strategy> getStrategiesUpdateStream(StreamExecutionEnvironment env) {

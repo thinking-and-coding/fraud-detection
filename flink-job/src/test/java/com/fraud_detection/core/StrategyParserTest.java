@@ -40,7 +40,7 @@ public class StrategyParserTest {
 
   @Test
   public void testStrategyParsedPlain() throws Exception {
-    String strategyString1 = "1,(active),(pay&refund),(taxiId&driverId),(totalFare),(sum),(>),(5),(20)";
+    String strategyString1 = "1,(active),(pay&refund),(taxiId&driverId),(metadata.totalFare),(sum),(>),(5),(20)";
 
     StrategyParser strategyParser = new StrategyParser();
     Strategy strategy1 = strategyParser.fromString(strategyString1);
@@ -49,7 +49,7 @@ public class StrategyParserTest {
     assertEquals("Strategy state incorrect", StrategyState.ACTIVE, strategy1.getStrategyState());
     assertEquals("Event names incorrect", lst("pay", "refund"), strategy1.getEvents());
     assertEquals("Key names incorrect", lst("taxiId", "driverId"), strategy1.getGroupingKeyNames());
-    assertEquals("Cumulative key incorrect", "totalFare", strategy1.getAggregateFieldName());
+    assertEquals("Cumulative key incorrect", "metadata.totalFare", strategy1.getAggregateFieldName());
     assertEquals(
         "Aggregator function incorrect",
         AggregatorFunctionType.SUM,
@@ -68,7 +68,7 @@ public class StrategyParserTest {
             + "  \"strategyState\": \"ACTIVE\",\n"
             + "  \"events\": [\"pay\", \"refund\"],\n"
             + "  \"groupingKeyNames\": [\"taxiId\", \"driverId\"],\n"
-            + "  \"aggregateFieldName\": \"totalFare\",\n"
+            + "  \"aggregateFieldName\": \"metadata.totalFare\",\n"
             + "  \"aggregatorFunctionType\": \"SUM\",\n"
             + "  \"limitOperatorType\": \"GREATER\",\n"
             + "  \"limit\": 50,\n"
@@ -82,7 +82,7 @@ public class StrategyParserTest {
     assertEquals("Strategy state incorrect", StrategyState.ACTIVE, strategy1.getStrategyState());
     assertEquals("Event names incorrect", lst("pay", "refund"), strategy1.getEvents());
     assertEquals("Key names incorrect", lst("taxiId", "driverId"), strategy1.getGroupingKeyNames());
-    assertEquals("Cumulative key incorrect", "totalFare", strategy1.getAggregateFieldName());
+    assertEquals("Cumulative key incorrect", "metadata.totalFare", strategy1.getAggregateFieldName());
     assertEquals(
         "Aggregator function incorrect",
         AggregatorFunctionType.SUM,
