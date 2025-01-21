@@ -17,56 +17,36 @@
 
 package com.ververica.demo.backend.datasource;
 
-import java.math.BigDecimal;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Event {
-  public long eventId;
-  public String eventName;
-  public long eventTime;
-  public long payeeId;
-  public long beneficiaryId;
-  public BigDecimal paymentAmount;
-  public PaymentType paymentType;
 
-  private static transient DateTimeFormatter timeFormatter =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-          .withLocale(Locale.US)
-          .withZone(ZoneOffset.UTC);
+  private static JsonMapper<Map> parser = new JsonMapper<>(Map.class);
 
-  public enum PaymentType {
-    CSH("CSH"),
-    CRD("CRD");
+  public String id;
 
-    String representation;
+  public String event;
 
-    PaymentType(String repr) {
-      this.representation = repr;
-    }
+  public long timestamp;
 
-    public static PaymentType fromString(String representation) {
-      for (PaymentType b : PaymentType.values()) {
-        if (b.representation.equals(representation)) {
-          return b;
-        }
-      }
-      return null;
-    }
-  }
+  public String accountUuid;
+
+  public String vtUuid;
+
+  public Map<String, Object> metadata;
 
   public static Event fromString(String line) {
     List<String> tokens = Arrays.asList(line.split(","));
@@ -85,15 +65,13 @@ public class Event {
 
     try {
       Iterator<String> iter = tokens.iterator();
-      event.eventId = Long.parseLong(iter.next());
-      event.eventName = iter.next();
-      event.eventTime =
-          ZonedDateTime.parse(iter.next(), timeFormatter).toInstant().toEpochMilli();
-      event.payeeId = Long.parseLong(iter.next());
-      event.beneficiaryId = Long.parseLong(iter.next());
-      event.paymentType = PaymentType.fromString(iter.next());
-      event.paymentAmount = new BigDecimal(iter.next());
-    } catch (NumberFormatException nfe) {
+      event.id = iter.next();
+      event.event = iter.next();
+      event.timestamp = Long.parseLong(iter.next());
+      event.accountUuid = iter.next();
+      event.vtUuid = iter.next();
+      event.metadata = parser.fromString(iter.next());
+    } catch (NumberFormatException | IOException nfe) {
       throw new RuntimeException("Invalid record: " + line, nfe);
     }
 

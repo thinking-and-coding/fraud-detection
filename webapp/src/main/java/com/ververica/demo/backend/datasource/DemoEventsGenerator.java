@@ -17,34 +17,20 @@
 
 package com.ververica.demo.backend.datasource;
 
-import java.math.BigDecimal;
-import java.util.SplittableRandom;
+import java.util.*;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DemoEventsGenerator extends EventsGenerator {
 
-  private long lastPayeeIdBeneficiaryIdTriggered = System.currentTimeMillis();
-  private long lastBeneficiaryIdTriggered = System.currentTimeMillis();
-  private BigDecimal beneficiaryLimit = new BigDecimal(10000000);
-  private BigDecimal payeeBeneficiaryLimit = new BigDecimal(20000000);
-
   public DemoEventsGenerator(Consumer<Event> consumer, int maxRecordsPerSecond) {
     super(consumer, maxRecordsPerSecond);
   }
 
-  protected Event randomEvent(SplittableRandom rnd) {
-    Event event = super.randomEvent(rnd);
-    long now = System.currentTimeMillis();
-    if (now - lastBeneficiaryIdTriggered > 8000 + rnd.nextInt(5000)) {
-      event.setPaymentAmount(beneficiaryLimit.add(new BigDecimal(rnd.nextInt(1000000))));
-      this.lastBeneficiaryIdTriggered = System.currentTimeMillis();
-    }
-    if (now - lastPayeeIdBeneficiaryIdTriggered > 12000 + rnd.nextInt(10000)) {
-      event.setPaymentAmount(payeeBeneficiaryLimit.add(new BigDecimal(rnd.nextInt(1000000))));
-      this.lastPayeeIdBeneficiaryIdTriggered = System.currentTimeMillis();
-    }
-    return event;
+  @Override
+  public Event randomEvent(SplittableRandom rnd) {
+    return super.randomEvent(rnd);
   }
+
 }

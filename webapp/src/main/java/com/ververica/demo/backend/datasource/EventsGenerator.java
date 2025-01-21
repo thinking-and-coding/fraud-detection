@@ -17,96 +17,84 @@
 
 package com.ververica.demo.backend.datasource;
 
-import com.ververica.demo.backend.datasource.Event.PaymentType;
-import java.math.BigDecimal;
-import java.util.SplittableRandom;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.*;
+import java.util.function.Consumer;
 
 @Slf4j
 public class EventsGenerator implements Runnable {
 
-  private static long MAX_PAYEE_ID = 100000;
-  private static long MAX_BENEFICIARY_ID = 100000;
+    private static final List<String> EVENT_LIST = new ArrayList<>(Arrays.asList("pay", "refund", "open", "close"));
 
-  private static double MIN_PAYMENT_AMOUNT = 5d;
-  private static double MAX_PAYMENT_AMOUNT = 20d;
-  private final Throttler throttler;
+    private static final List<String> CHARACTOR_LIST = new ArrayList<>(Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H"));
 
-  private volatile boolean running = true;
-  private Integer maxRecordsPerSecond;
+    private static final List<Map<String, Object>> MAP_LIST = new ArrayList<>(Arrays.asList(new HashMap<String, Object>() {{
+        put("totalFare", 5);
+        put("amount", 1);
+        put("fee", 2.5f);
+    }}, new HashMap<String, Object>() {{
+        put("totalFare", 10);
+        put("amount", 2);
+        put("fee", 1.8f);
+    }}, new HashMap<String, Object>() {{
+        put("totalFare", 20);
+        put("amount", 5);
+        put("fee", 3.3f);
+    }}));
 
-  private Consumer<Event> consumer;
+    private final Throttler throttler;
 
-  public EventsGenerator(Consumer<Event> consumer, int maxRecordsPerSecond) {
-    this.consumer = consumer;
-    this.maxRecordsPerSecond = maxRecordsPerSecond;
-    this.throttler = new Throttler(maxRecordsPerSecond);
-  }
+    private volatile boolean running = true;
 
-  public void adjustMaxRecordsPerSecond(long maxRecordsPerSecond) {
-    throttler.adjustMaxRecordsPerSecond(maxRecordsPerSecond);
-  }
+    private Consumer<Event> consumer;
 
-  protected Event randomEvent(SplittableRandom rnd) {
-    long eventId = rnd.nextLong(Long.MAX_VALUE);
-    String eventName = rnd.nextInt(0, 2) > 0 ? "pay" : "refund";
-    long payeeId = rnd.nextLong(MAX_PAYEE_ID);
-    long beneficiaryId = rnd.nextLong(MAX_BENEFICIARY_ID);
-    double paymentAmountDouble =
-        ThreadLocalRandom.current().nextDouble(MIN_PAYMENT_AMOUNT, MAX_PAYMENT_AMOUNT);
-    paymentAmountDouble = Math.floor(paymentAmountDouble * 100) / 100;
-    BigDecimal paymentAmount = BigDecimal.valueOf(paymentAmountDouble);
-
-    return Event.builder()
-            .eventId(eventId)
-            .eventName(eventName)
-            .payeeId(payeeId)
-            .beneficiaryId(beneficiaryId)
-            .paymentAmount(paymentAmount)
-            .paymentType(paymentType(eventId))
-            .eventTime(System.currentTimeMillis())
-            .build();
-  }
-
-  public Event generateOne() {
-    return randomEvent(new SplittableRandom());
-  }
-
-  private static PaymentType paymentType(long id) {
-    int name = (int) (id % 2);
-    switch (name) {
-      case 0:
-        return PaymentType.CRD;
-      case 1:
-        return PaymentType.CSH;
-      default:
-        throw new IllegalStateException("");
+    public EventsGenerator(Consumer<Event> consumer, int maxRecordsPerSecond) {
+        this.consumer = consumer;
+        this.throttler = new Throttler(maxRecordsPerSecond);
     }
-  }
 
-  @Override
-  public final void run() {
-    running = true;
-
-    final SplittableRandom rnd = new SplittableRandom();
-
-    while (running) {
-      Event event = randomEvent(rnd);
-      log.debug("{}", event);
-      consumer.accept(event);
-      try {
-        throttler.throttle();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+    public void adjustMaxRecordsPerSecond(long maxRecordsPerSecond) {
+        throttler.adjustMaxRecordsPerSecond(maxRecordsPerSecond);
     }
-    log.info("Finished run()");
-  }
 
-  public final void cancel() {
-    running = false;
-    log.info("Cancelled");
-  }
+    protected Event randomEvent(SplittableRandom rnd) {
+        return Event
+                .builder()
+                .id(UUID.randomUUID().toString())
+                .event(EVENT_LIST.get(rnd.nextInt(EVENT_LIST.size())))
+                .accountUuid(CHARACTOR_LIST.get(rnd.nextInt(CHARACTOR_LIST.size())))
+                .vtUuid(CHARACTOR_LIST.get(rnd.nextInt(CHARACTOR_LIST.size())))
+                .timestamp(System.currentTimeMillis())
+                .metadata(MAP_LIST.get(rnd.nextInt(MAP_LIST.size())))
+                .build();
+    }
+
+    public Event generateOne() {
+        return randomEvent(new SplittableRandom());
+    }
+
+    @Override
+    public final void run() {
+        running = true;
+
+        final SplittableRandom rnd = new SplittableRandom();
+
+        while (running) {
+            Event event = randomEvent(rnd);
+            log.debug("{}", event);
+            consumer.accept(event);
+            try {
+                throttler.throttle();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        log.info("Finished run()");
+    }
+
+    public final void cancel() {
+        running = false;
+        log.info("Cancelled");
+    }
 }

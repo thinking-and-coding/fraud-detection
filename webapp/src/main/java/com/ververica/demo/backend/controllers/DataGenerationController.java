@@ -52,7 +52,7 @@ public class DataGenerationController {
   public DataGenerationController(
       KafkaEventsPusher eventsPusher,
       KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry) {
-    eventsGenerator = new DemoEventsGenerator(eventsPusher, 1);
+    eventsGenerator = new DemoEventsGenerator(eventsPusher, 5);
     this.kafkaListenerEndpointRegistry = kafkaListenerEndpointRegistry;
   }
 

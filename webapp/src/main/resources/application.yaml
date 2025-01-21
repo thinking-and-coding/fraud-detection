@@ -3,7 +3,7 @@ server:
 
 security.auth.enabled: false
 
-eventsRateDisplayLimit: 50
+eventsRateDisplayLimit: 100
 
 kafka:
   topic:

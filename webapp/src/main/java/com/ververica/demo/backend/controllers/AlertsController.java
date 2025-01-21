@@ -26,6 +26,7 @@ import com.ververica.demo.backend.model.Alert;
 import com.ververica.demo.backend.repositories.StrategyRepository;
 import com.ververica.demo.backend.services.KafkaEventsPusher;
 import java.math.BigDecimal;
+import java.util.concurrent.ThreadLocalRandom;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +66,8 @@ public class AlertsController {
     Strategy strategy = repository.findById(id).orElseThrow(() -> new StrategyNotFoundException(id));
     Event triggeringEvent = eventsPusher.getLastEvent();
     String violatedStrategy = strategy.getStrategyPayload();
-    BigDecimal triggeringValue = triggeringEvent.getPaymentAmount().multiply(new BigDecimal(10));
+    double randomDouble = ThreadLocalRandom.current().nextDouble(10, 2000);
+    BigDecimal triggeringValue = BigDecimal.valueOf(randomDouble);
 
     Alert alert = new Alert(strategy.getId(), violatedStrategy, triggeringEvent, triggeringValue);
 

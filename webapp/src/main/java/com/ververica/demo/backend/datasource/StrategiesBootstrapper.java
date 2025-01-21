@@ -41,10 +41,10 @@ public class StrategiesBootstrapper implements ApplicationRunner {
   public void run(ApplicationArguments args) {
     String payload1 =
         "{\"strategyId\":\"1\","
-            + "\"aggregateFieldName\":\"paymentAmount\","
+            + "\"aggregateFieldName\":\"metadata.totalFare\","
             + "\"aggregatorFunctionType\":\"SUM\","
-            + "\"groupingKeyNames\":[\"payeeId\", \"beneficiaryId\"],"
-            + "\"limit\":\"20000000\","
+            + "\"groupingKeyNames\":[\"accountUuid\", \"vtUuid\"],"
+            + "\"limit\":\"200\","
             + "\"limitOperatorType\":\"GREATER\","
             + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"pay\",\"refund\"],"
@@ -56,7 +56,7 @@ public class StrategiesBootstrapper implements ApplicationRunner {
         "{\"strategyId\":\"2\","
             + "\"aggregateFieldName\":\"COUNT_FLINK\","
             + "\"aggregatorFunctionType\":\"SUM\","
-            + "\"groupingKeyNames\":[\"paymentType\"],"
+            + "\"groupingKeyNames\":[\"accountUuid\"],"
             + "\"limit\":\"300\","
             + "\"limitOperatorType\":\"LESS\","
             + "\"strategyState\":\"PAUSE\","
@@ -67,10 +67,10 @@ public class StrategiesBootstrapper implements ApplicationRunner {
 
     String payload3 =
         "{\"strategyId\":\"3\","
-            + "\"aggregateFieldName\":\"paymentAmount\","
+            + "\"aggregateFieldName\":\"metadata.amount\","
             + "\"aggregatorFunctionType\":\"SUM\","
-            + "\"groupingKeyNames\":[\"beneficiaryId\"],"
-            + "\"limit\":\"10000000\","
+            + "\"groupingKeyNames\":[\"vtUuid\"],"
+            + "\"limit\":\"100\","
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
             + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"pay\"],"
@@ -82,11 +82,11 @@ public class StrategiesBootstrapper implements ApplicationRunner {
         "{\"strategyId\":\"4\","
             + "\"aggregateFieldName\":\"COUNT_WITH_RESET_FLINK\","
             + "\"aggregatorFunctionType\":\"SUM\","
-            + "\"groupingKeyNames\":[\"paymentType\"],"
+            + "\"groupingKeyNames\":[\"accountUuid\"],"
             + "\"limit\":\"100\","
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
             + "\"strategyState\":\"ACTIVE\","
-            + "\"events\":[\"refund\"],"
+            + "\"events\":[\"pay\",\"refund\",\"open\",\"close\"],"
             + "\"windowMinutes\":\"1440\"}";
 
     Strategy strategy4 = new Strategy(payload4);
