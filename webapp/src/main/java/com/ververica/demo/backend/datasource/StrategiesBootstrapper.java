@@ -48,7 +48,7 @@ public class StrategiesBootstrapper implements ApplicationRunner {
             + "\"limitOperatorType\":\"GREATER\","
             + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"pay\",\"refund\"],"
-            + "\"windowMinutes\":\"43200\"}";
+            + "\"windowMinutes\":\"30\"}";
 
     Strategy strategy1 = new Strategy(payload1);
 
@@ -61,7 +61,7 @@ public class StrategiesBootstrapper implements ApplicationRunner {
             + "\"limitOperatorType\":\"LESS\","
             + "\"strategyState\":\"PAUSE\","
             + "\"events\":[\"pay\",\"refund\"],"
-            + "\"windowMinutes\":\"1440\"}";
+            + "\"windowMinutes\":\"10\"}";
 
     Strategy strategy2 = new Strategy(payload2);
 
@@ -74,7 +74,7 @@ public class StrategiesBootstrapper implements ApplicationRunner {
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
             + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"pay\"],"
-            + "\"windowMinutes\":\"1440\"}";
+            + "\"windowMinutes\":\"60\"}";
 
     Strategy strategy3 = new Strategy(payload3);
 
@@ -87,7 +87,7 @@ public class StrategiesBootstrapper implements ApplicationRunner {
             + "\"limitOperatorType\":\"GREATER_EQUAL\","
             + "\"strategyState\":\"ACTIVE\","
             + "\"events\":[\"pay\",\"refund\",\"open\",\"close\"],"
-            + "\"windowMinutes\":\"1440\"}";
+            + "\"windowMinutes\":\"20\"}";
 
     Strategy strategy4 = new Strategy(payload4);
 

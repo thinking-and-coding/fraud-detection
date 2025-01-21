@@ -17,22 +17,6 @@ import { AutoSizer, List, ListRowRenderer } from "react-virtualized";
 import SockJsClient from "react-stomp";
 import "react-virtualized/styles.css";
 
-// MSG
-// beneficiaryId: 42694
-// eventTime: 1565965071385
-// payeeId: 20908
-// paymentAmount: 13.54
-// paymentType: "CRD"
-// eventId: 5954524216210268000
-
-export const paymentTypeMap: {
-  [s: string]: IconDefinition;
-} = {
-  CRD: faCreditCard,
-  CSH: faMoneyBill,
-  undefined: faQuestionCircle,
-};
-
 const EventsCard = styled(Card)`
   width: 100%;
   height: 100%;
@@ -52,7 +36,7 @@ const EventsHeading = styled.div`
   font-weight: 500;
 `;
 
-export const Payment = styled.div`
+export const EventInfo = styled.div`
   position: relative;
   display: flex;
   align-items: center;
@@ -82,20 +66,20 @@ const FlexSpan = styled.span`
   flex: 1 1 auto;
 `;
 
-export const Payee = styled(FlexSpan)`
-  justify-content: flex-start;
-`;
-
 export const EventName = styled(FlexSpan)`
   justify-content: center;
 `;
 
-export const Details = styled(FlexSpan)`
-  justify-content: center;
+export const AccountUuid = styled(FlexSpan)`
+  justify-content: flex-start;
 `;
 
-export const Beneficiary = styled(FlexSpan)`
+export const VtUuid = styled(FlexSpan)`
   justify-content: flex-end;
+`;
+
+export const Metadata = styled(FlexSpan)`
+  justify-content: center;
 `;
 
 const EventsOverlay = styled.div`
@@ -128,7 +112,7 @@ export const Events = React.memo(
     const [events, setEvents] = useState<Event[]>([]);
     const addEvent = (event: Event) => setEvents(state => [...state.slice(-33), event]);
 
-    const [generatorSpeed, setGeneratorSpeed] = useLocalStorage("generatorSpeed", 1);
+    const [generatorSpeed, setGeneratorSpeed] = useLocalStorage("generatorSpeed", 5);
     const handleSliderChange = (val: number) => setGeneratorSpeed(val);
 
     useUpdateEffect(() => {
@@ -139,16 +123,14 @@ export const Events = React.memo(
       const t = events[index];
 
       return (
-        <Payment key={key} style={style} className="px-2">
-          <Payee>{t.payeeId}</Payee>
-          <EventName>{t.eventName}</EventName>
-          <Details>
-            <FontAwesomeIcon className="mx-1" icon={paymentTypeMap[t.paymentType]} />
-            <Badge color="info">${parseFloat(t.paymentAmount.toString()).toFixed(2)}</Badge>
-            <FontAwesomeIcon className="mx-1" icon={faArrowRight} />
-          </Details>
-          <Beneficiary>{t.beneficiaryId}</Beneficiary>
-        </Payment>
+        <EventInfo key={key} style={style} className="px-2">
+          <EventName>{t.event}</EventName>
+          <AccountUuid>{t.accountUuid}</AccountUuid>
+          <VtUuid>{t.vtUuid}</VtUuid>
+          <Metadata>
+            <Badge color="info">{JSON.stringify(t.metadata)}</Badge>
+          </Metadata>
+        </EventInfo>
       );
     };
 
@@ -183,10 +165,10 @@ export const Events = React.memo(
                 </div>
               </EventsOverlay>
               <EventsHeading className="px-2 py-1">
-                <span>Payer</span>
                 <span>Event</span>
-                <span>Amount</span>
-                <span>Beneficiary</span>
+                <span>AccountUuid</span>
+                <span>VtUuid</span>
+                <span>Metadata</span>
               </EventsHeading>
               <AutoSizer>
                 {({ height, width }) => (
