@@ -38,41 +38,41 @@ const sampleStrategies: {
   [n: number]: StrategyPayload;
 } = {
   1: {
-    aggregateFieldName: "paymentAmount",
+    aggregateFieldName: "metadata.totalFare",
     aggregatorFunctionType: "SUM",
-    groupingKeyNames: ["payeeId", "beneficiaryId"],
-    limit: 20000000,
+    groupingKeyNames: ["accountUuid", "vtUuid"],
+    limit: 200,
     limitOperatorType: "GREATER",
-    windowMinutes: 43200,
+    windowMinutes: 30,
     strategyState: "ACTIVE",
     events: ["pay","refund"],
   },
    2: {
-     aggregateFieldName: "paymentAmount",
+     aggregateFieldName: "metadata.amount",
      aggregatorFunctionType: "SUM",
-     groupingKeyNames: ["beneficiaryId"],
-     limit: 10000000,
+     groupingKeyNames: ["vtUuid"],
+     limit: 100,
      limitOperatorType: "GREATER_EQUAL",
-     windowMinutes: 1440,
+     windowMinutes: 10,
      strategyState: "ACTIVE",
      events: ["pay"],
    },
   3: {
     aggregateFieldName: "COUNT_WITH_RESET_FLINK",
     aggregatorFunctionType: "SUM",
-    groupingKeyNames: ["paymentType"],
+    groupingKeyNames: ["accountUuid"],
     limit: 100,
     limitOperatorType: "GREATER_EQUAL",
-    windowMinutes: 1440,
+    windowMinutes: 60,
     strategyState: "ACTIVE",
     events: ["refund"],
   },
 
 };
 
-const keywords = ["beneficiaryId", "payeeId", "paymentAmount", "paymentType"];
-const aggregateKeywords = ["paymentAmount", "COUNT_FLINK", "COUNT_WITH_RESET_FLINK"];
-const events = ["pay", "refund"];
+const groupingKeyNames = ["accountUuid", "vtUuid", "event"];
+const aggregateKeywords = ["metadata.totalFare", "metadata.amount", "metadata.fee", "COUNT_FLINK", "COUNT_WITH_RESET_FLINK"];
+const events = ["pay", "refund", "open", "close"];
 
 const MySelect = React.memo(CreatableSelect);
 
@@ -166,7 +166,7 @@ export const AddStrategyModal: FC<Props> = props => {
               name="groupingKeyNames"
               className="react-select"
               classNamePrefix="react-select"
-              options={keywords.map(k => ({ value: k, label: k }))}
+              options={groupingKeyNames.map(k => ({ value: k, label: k }))}
             />
           </FieldGroup>
 
