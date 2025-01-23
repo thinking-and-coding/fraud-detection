@@ -21,7 +21,6 @@ package com.fraud_detection.core.functions;
 
 import com.fraud_detection.core.Descriptors;
 import com.fraud_detection.core.entity.Event;
-import com.fraud_detection.core.entity.Keyed;
 import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.entity.enums.ControlType;
 import com.fraud_detection.core.entity.enums.StrategyState;
@@ -32,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.state.ReadOnlyBroadcastState;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
@@ -44,7 +44,7 @@ import java.util.Map.Entry;
  * Implements dynamic data partitioning based on a set of broadcasted strategies.
  */
 @Slf4j
-public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy, Keyed<Event, String, Integer>> {
+public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy, Tuple3<Event, String, Integer>> {
 
     private StrategyCounterGauge strategyCounterGauge;
 
@@ -55,19 +55,19 @@ public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy
     }
 
     @Override
-    public void processElement(Event event, ReadOnlyContext ctx, Collector<Keyed<Event, String, Integer>> out) throws Exception {
+    public void processElement(Event event, ReadOnlyContext ctx, Collector<Tuple3<Event, String, Integer>> out) throws Exception {
         ReadOnlyBroadcastState<Integer, Strategy> strategiesState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
         forkEventForEachGroupingKey(event, strategiesState, out);
     }
 
-    private void forkEventForEachGroupingKey(Event event, ReadOnlyBroadcastState<Integer, Strategy> strategiesState, Collector<Keyed<Event, String, Integer>> out) throws Exception {
+    private void forkEventForEachGroupingKey(Event event, ReadOnlyBroadcastState<Integer, Strategy> strategiesState, Collector<Tuple3<Event, String, Integer>> out) throws Exception {
         List<Integer> strategyIds = new ArrayList<>();
         for (Map.Entry<Integer, Strategy> entry : strategiesState.immutableEntries()) {
             final Strategy strategy = entry.getValue();
             if (strategy.getEvents().contains(event.getEvent())) {
                 String key = KeysExtractor.getKey(strategy.getGroupingKeyNames(), event);
                 if (StringUtils.isNotBlank(key)) {
-                    out.collect(new Keyed<>(event, key, strategy.getStrategyId()));
+                    out.collect(new Tuple3<>(event, key, strategy.getStrategyId()));
                 }
                 strategyIds.add(strategy.getStrategyId());
             }
@@ -78,7 +78,7 @@ public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy
     }
 
     @Override
-    public void processBroadcastElement(Strategy strategy, Context ctx, Collector<Keyed<Event, String, Integer>> out) throws Exception {
+    public void processBroadcastElement(Strategy strategy, Context ctx, Collector<Tuple3<Event, String, Integer>> out) throws Exception {
         log.info("{}", strategy);
         BroadcastState<Integer, Strategy> broadcastState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
         ProcessingUtils.handleStrategyBroadcast(strategy, broadcastState);

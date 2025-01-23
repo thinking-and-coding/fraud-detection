@@ -21,7 +21,6 @@ package com.fraud_detection.core.functions;
 import com.fraud_detection.core.Descriptors;
 import com.fraud_detection.core.entity.Alert;
 import com.fraud_detection.core.entity.Event;
-import com.fraud_detection.core.entity.Keyed;
 import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.entity.enums.ControlType;
 import com.fraud_detection.core.entity.enums.StrategyState;
@@ -32,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.accumulators.SimpleAccumulator;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.state.MapState;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.metrics.Meter;
 import org.apache.flink.metrics.MeterView;
@@ -51,7 +51,7 @@ import static com.fraud_detection.core.utils.ProcessingUtils.handleStrategyBroad
  * Implements main strategy evaluation and alerting logic.
  */
 @Slf4j
-public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, Keyed<Event, String, Integer>, Strategy, Alert> {
+public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, Tuple3<Event, String, Integer>, Strategy, Alert> {
 
     private static final String COUNT = "COUNT_FLINK";
 
@@ -75,8 +75,8 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
     }
 
     @Override
-    public void processElement(Keyed<Event, String, Integer> value, ReadOnlyContext ctx, Collector<Alert> out) throws Exception {
-        Event event = value.getWrapped();
+    public void processElement(Tuple3<Event, String, Integer> tuple, ReadOnlyContext ctx, Collector<Alert> out) throws Exception {
+        Event event = tuple.f0;
         long currentEventTime = event.getTimestamp();
 
         ProcessingUtils.addToStateValuesSet(windowState, currentEventTime, event);
@@ -84,10 +84,10 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
         long ingestionTime = event.getIngestionTimestamp();
         ctx.output(Descriptors.latencySinkTag, System.currentTimeMillis() - ingestionTime);
 
-        Strategy strategy = ctx.getBroadcastState(Descriptors.strategiesDescriptor).get(value.getId());
+        Strategy strategy = ctx.getBroadcastState(Descriptors.strategiesDescriptor).get(tuple.f2);
 
         if (noStrategyAvailable(strategy)) {
-            log.error("Strategy with ID {} does not exist", value.getId());
+            log.error("Strategy with ID {} does not exist", tuple.f2);
             return;
         }
 
@@ -111,7 +111,7 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
                 "Engine Strategy "
                     + strategy.getStrategyId()
                     + " | "
-                    + value.getKey()
+                    + tuple.f1
                     + " : "
                     + aggregateResult.toString()
                     + " -> "
@@ -122,7 +122,7 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
                     evictAllStateElements();
                 }
                 alertMeter.markEvent();
-                out.collect(new Alert<>(strategy.getStrategyId(), strategy, value.getKey(), value.getWrapped(), aggregateResult));
+                out.collect(new Alert<>(strategy.getStrategyId(), strategy, tuple.f1, tuple.f0, aggregateResult));
             }
         }
     }

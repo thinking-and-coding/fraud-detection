@@ -20,7 +20,6 @@ package com.fraud_detection.core;
 
 import com.fraud_detection.core.entity.Alert;
 import com.fraud_detection.core.entity.Event;
-import com.fraud_detection.core.entity.Keyed;
 import com.fraud_detection.core.entity.Strategy;
 import com.fraud_detection.core.functions.DynamicAlertFunction;
 import com.fraud_detection.core.functions.DynamicKeyFunction;
@@ -30,6 +29,7 @@ import com.fraud_detection.core.util.BroadcastStreamNonKeyedOperatorTestHarness;
 import com.fraud_detection.core.utils.StrategyParser;
 import org.apache.flink.api.common.state.BroadcastState;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
 import org.apache.flink.streaming.util.TestHarnessUtil;
@@ -53,7 +53,7 @@ public class EngineTest {
     Event event1 = Event.fromString("1,1,pay,1735660800,A,B,{\"totalFare\":21.5}");
 
     try (BroadcastStreamNonKeyedOperatorTestHarness<
-            Event, Strategy, Keyed<Event, String, Integer>>
+            Event, Strategy, Tuple3<Event, String, Integer>>
         testHarness =
             BroadcastStreamNonKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicKeyFunction(), Descriptors.strategiesDescriptor)) {
@@ -63,7 +63,7 @@ public class EngineTest {
 
       Queue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
       expectedOutput.add(
-          new StreamRecord<>(new Keyed<>(event1, "{accountUuid=A;vtUuid=B}", 1), 15L));
+          new StreamRecord<>(new Tuple3<>(event1, "{accountUuid=A;vtUuid=B}", 1), 15L));
 
       TestHarnessUtil.assertOutputEquals(
           "Wrong dynamically keyed output", expectedOutput, testHarness.getOutput());
@@ -78,7 +78,7 @@ public class EngineTest {
     Event event1 = Event.fromString("1,1,pay,1735660800,A,B,{\"totalFare\":21.5,\"vtUuid\":\"B\"}");
 
     try (BroadcastStreamNonKeyedOperatorTestHarness<
-            Event, Strategy, Keyed<Event, String, Integer>>
+            Event, Strategy, Tuple3<Event, String, Integer>>
                  testHarness =
                  BroadcastStreamNonKeyedOperatorTestHarness.getInitializedTestHarness(
                          new DynamicKeyFunction(), Descriptors.strategiesDescriptor)) {
@@ -88,7 +88,7 @@ public class EngineTest {
 
       Queue<Object> expectedOutput = new ConcurrentLinkedQueue<>();
       expectedOutput.add(
-              new StreamRecord<>(new Keyed<>(event1, "{accountUuid=A;metadata.vtUuid=B}", 1), 15L));
+              new StreamRecord<>(new Tuple3<>(event1, "{accountUuid=A;metadata.vtUuid=B}", 1), 15L));
 
       TestHarnessUtil.assertOutputEquals(
               "Wrong dynamically keyed output", expectedOutput, testHarness.getOutput());
@@ -101,7 +101,7 @@ public class EngineTest {
     Strategy strategy1 = strategyParser.fromString("1,(active),(pay&refund),(accountUuid),(metadata.totalFare),(SUM),(>),(50),(20)");
 
     try (BroadcastStreamNonKeyedOperatorTestHarness<
-            Event, Strategy, Keyed<Event, String, Integer>>
+            Event, Strategy, Tuple3<Event, String, Integer>>
         testHarness =
             BroadcastStreamNonKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicKeyFunction(), Descriptors.strategiesDescriptor)) {
@@ -129,16 +129,16 @@ public class EngineTest {
     Event event2 = Event.fromString("1,2,refund,1735661800,A,B,{\"totalFare\":19}");
     Event event3 = Event.fromString("1,3,refund,1735662800,A,B,{\"totalFare\":2}");
 
-    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "{accountUuid=A;event=pay}", 1);
-    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "{accountUuid=A;event=refund}", 1);
-    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "{accountUuid=A;event=refund}", 1);
+    Tuple3<Event, String, Integer> keyed1 = new Tuple3<>(event1, "{accountUuid=A;event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed2 = new Tuple3<>(event2, "{accountUuid=A;event=refund}", 1);
+    Tuple3<Event, String, Integer> keyed3 = new Tuple3<>(event3, "{accountUuid=A;event=refund}", 1);
 
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Event, String, Integer>, Strategy, Alert>
+            String, Tuple3<Event, String, Integer>, Strategy, Alert>
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
-                    Keyed::getKey,
+                    tuple-> tuple.f1,
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
                 Descriptors.strategiesDescriptor)) {
@@ -172,15 +172,15 @@ public class EngineTest {
     Event event2 = Event.fromString("1,2,refund,1735661800,A,B,{\"totalFare\":19}");
     Event event3 = Event.fromString("1,3,pay,1735662800,A,B,{\"totalFare\":2}");
 
-    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "{event=pay}", 1);
-    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "{event=refund}", 1);
-    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed1 = new Tuple3<>(event1, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed2 = new Tuple3<>(event2, "{event=refund}", 1);
+    Tuple3<Event, String, Integer> keyed3 = new Tuple3<>(event3, "{event=pay}", 1);
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Event, String, Integer>, Strategy, Alert>
+            String, Tuple3<Event, String, Integer>, Strategy, Alert>
                  testHarness =
                  BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                          new DynamicAlertFunction(),
-                         keyed -> keyed.getKey(),
+                         tuple-> tuple.f1,
                          null,
                          BasicTypeInfo.STRING_TYPE_INFO,
                          Descriptors.strategiesDescriptor)) {
@@ -211,15 +211,15 @@ public class EngineTest {
 
     Event event2 = Event.fromString("1,2,pay,1735660800,B,C,{\"totalFare\":2}");
 
-    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "{event=pay}", 1);
-    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed1 = new Tuple3<>(event1, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed2 = new Tuple3<>(event2, "{event=pay}", 1);
 
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Event, String, Integer>, Strategy, Alert>
+            String, Tuple3<Event, String, Integer>, Strategy, Alert>
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
-                    keyed -> keyed.getKey(),
+                    tuple-> tuple.f1,
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
                 Descriptors.strategiesDescriptor)) {
@@ -254,17 +254,17 @@ public class EngineTest {
 
     Event event4 = Event.fromString("1,4,pay,1735661100,G,H,{\"totalFare\":3}");
 
-    Keyed<Event, String, Integer> keyed1 = new Keyed<>(event1, "{event=pay}", 1);
-    Keyed<Event, String, Integer> keyed2 = new Keyed<>(event2, "{event=pay}", 1);
-    Keyed<Event, String, Integer> keyed3 = new Keyed<>(event3, "{event=pay}", 1);
-    Keyed<Event, String, Integer> keyed4 = new Keyed<>(event4, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed1 = new Tuple3<>(event1, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed2 = new Tuple3<>(event2, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed3 = new Tuple3<>(event3, "{event=pay}", 1);
+    Tuple3<Event, String, Integer> keyed4 = new Tuple3<>(event4, "{event=pay}", 1);
 
     try (BroadcastStreamKeyedOperatorTestHarness<
-            String, Keyed<Event, String, Integer>, Strategy, Alert>
+            String, Tuple3<Event, String, Integer>, Strategy, Alert>
         testHarness =
             BroadcastStreamKeyedOperatorTestHarness.getInitializedTestHarness(
                 new DynamicAlertFunction(),
-                    keyed -> keyed.getKey(),
+                    tuple-> tuple.f1,
                 null,
                 BasicTypeInfo.STRING_TYPE_INFO,
                 Descriptors.strategiesDescriptor)) {
@@ -298,9 +298,9 @@ public class EngineTest {
     }
   }
 
-  private StreamRecord<Keyed<Event, String, Integer>> toStreamRecord(
-      Keyed<Event, String, Integer> keyed) {
-    return new StreamRecord<>(keyed, keyed.getWrapped().getTimestamp());
+  private StreamRecord<Tuple3<Event, String, Integer>> toStreamRecord(
+      Tuple3<Event, String, Integer> tuple) {
+    return new StreamRecord<>(tuple, tuple.f0.getTimestamp());
   }
 
   private Queue<Object> filterOutWatermarks(Queue<Object> in) {

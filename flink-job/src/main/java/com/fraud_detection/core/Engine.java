@@ -76,7 +76,7 @@ public class Engine {
             .process(new DynamicKeyFunction())
             .uid("DynamicKeyFunction")
             .name("Dynamic Partitioning Function")
-            .keyBy(keyed -> keyed.getKey())
+            .keyBy(tuple-> tuple.f1)
             .connect(strategiesStream)
             .process(new DynamicAlertFunction())
             .uid("DynamicAlertFunction")
