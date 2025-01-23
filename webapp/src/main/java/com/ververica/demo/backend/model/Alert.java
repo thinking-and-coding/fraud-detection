@@ -17,7 +17,7 @@
 
 package com.ververica.demo.backend.model;
 
-import com.ververica.demo.backend.datasource.Transaction;
+import com.ververica.demo.backend.datasource.Event;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,9 +25,9 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class Alert {
-  private Integer ruleId;
-  private String rulePayload;
+  private Integer strategyId;
+  private String strategyPayload;
 
-  Transaction triggeringEvent;
+  Event triggeringEvent;
   BigDecimal triggeringValue;
 }

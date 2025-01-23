@@ -1,13 +1,13 @@
 import React, { FC } from "react";
 import { Button, CardBody, CardHeader, Table, CardFooter, Badge } from "reactstrap";
 import styled from "styled-components/macro";
-import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import { Alert } from "../interfaces";
 import { CenteredContainer } from "./CenteredContainer";
 import { ScrollingCol } from "./App";
-import { Payment, Payee, Event, Details, Beneficiary, paymentTypeMap } from "./Transactions";
+import { EventInfo, AccountUuid, EventName, Metadata, VtUuid } from "./Events";
 import { Line } from "app/utils/useLines";
 
 const AlertTable = styled(Table)`
@@ -65,26 +65,19 @@ export const Alerts: FC<Props> = props => {
               <AlertTable size="sm" bordered={true}>
                 <tbody>
                   <tr>
-                    <td>Transaction</td>
-                    <td>{alert.triggeringEvent.transactionId}</td>
+                    <td>Event</td>
+                    <td>{alert.triggeringEvent.event}</td>
                   </tr>
                   <tr>
                     <td colSpan={2} className="p-0" style={{ borderBottomWidth: 3 }}>
-                      <Payment className="px-2">
-                        <Payee>{t.payeeId}</Payee>
-                        <Event>{t.event}</Event>
-                        <Details>
-                          <FontAwesomeIcon className="mx-1" icon={paymentTypeMap[t.paymentType]} />
-                          <Badge color="info">${parseFloat(t.paymentAmount.toString()).toFixed(2)}</Badge>
-                          <FontAwesomeIcon className="mx-1" icon={faArrowRight} />
-                        </Details>
-                        <Beneficiary>{t.beneficiaryId}</Beneficiary>
-                      </Payment>
+                      <EventInfo className="px-2">
+                        {t.accountUuid}-{t.vtUuid}-{JSON.stringify(t.metadata)}
+                      </EventInfo>
                     </td>
                   </tr>
                   <tr>
-                    <td>Rule</td>
-                    <td>{alert.ruleId}</td>
+                    <td>Strategy</td>
+                    <td>{alert.strategyId}</td>
                   </tr>
                   <tr>
                     <td>Amount</td>
@@ -92,15 +85,15 @@ export const Alerts: FC<Props> = props => {
                   </tr>
                   <tr>
                     <td>Of</td>
-                    <td>{alert.violatedRule.aggregateFieldName}</td>
+                    <td>{alert.violatedStrategy.aggregateFieldName}</td>
                   </tr>
                 </tbody>
               </AlertTable>
             </CardBody>
             <CardFooter style={{ padding: "0.3rem" }}>
-              Alert for Rule <em>{alert.ruleId}</em> caused by Transaction{" "}
-              <em>{alert.triggeringEvent.transactionId}</em> with Amount <em>{alert.triggeringValue}</em> of{" "}
-              <em>{alert.violatedRule.aggregateFieldName}</em>.
+              Alert for Strategy <em>{alert.strategyId}</em> caused by Event{" "}
+              <em>{alert.triggeringEvent.id}</em> with Amount <em>{alert.triggeringValue}</em> of{" "}
+              <em>{alert.violatedStrategy.aggregateFieldName}</em>.
             </CardFooter>
           </CenteredContainer>
         );

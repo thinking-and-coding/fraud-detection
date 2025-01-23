@@ -1,6 +1,6 @@
-export { AddRuleModal } from "./AddRuleModal";
+export { AddStrategyModal } from "./AddStrategyModal";
 export { App } from "./App";
 export { Header } from "./Header";
 export { Alerts } from "./Alerts";
-export { Rules } from "./Rules";
-export { Transactions } from "./Transactions";
+export { Strategies } from "./Strategies";
+export { Events } from "./Events";

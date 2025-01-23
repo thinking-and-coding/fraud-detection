@@ -1,5 +1,5 @@
-import { Header, Alerts, Rules, Transactions } from "app/components";
-import { Rule, Alert } from "app/interfaces";
+import { Header, Alerts, Strategies, Events } from "app/components";
+import { Strategy, Alert } from "app/interfaces";
 // import { useLines } from "app/utils/useLines";
 import Axios from "axios";
 import React, { createRef, FC, useEffect, useRef, useState } from "react";
@@ -13,8 +13,8 @@ import { intersectionWith, find } from "lodash/fp";
 import "../assets/app.scss";
 import { Line } from "app/utils/useLines";
 
-// edit for rule timeouts. (s * ms)
-const RULE_TIMEOUT = 5 * 1000;
+// edit for strategy timeouts. (s * ms)
+const STRATEGY_TIMEOUT = 5 * 1000;
 
 const LayoutContainer = styled.div`
   display: flex;
@@ -33,30 +33,30 @@ export const ScrollingCol = styled(Col)`
 `;
 
 export const App: FC = () => {
-  const [rules, setRules] = useState<Rule[]>([]);
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [ruleLines, setRuleLines] = useState<Line[]>([]);
+  const [strategyLines, setStrategyLines] = useState<Line[]>([]);
   const [alertLines, setAlertLines] = useState<Line[]>([]);
 
-  const transactionsRef = useRef<HTMLDivElement>(null);
-  // const { handleScroll } = useLines(transactionsRef, rules, alerts);
+  const eventsRef = useRef<HTMLDivElement>(null);
+  // const { handleScroll } = useLines(eventsRef, strategies, alerts);
 
   useEffect(() => {
-    Axios.get<Rule[]>("/api/rules").then(response =>
-      setRules(response.data.map(rule => ({ ...rule, ref: createRef<HTMLDivElement>() })))
+    Axios.get<Strategy[]>("/api/strategies").then(response =>
+      setStrategies(response.data.map(strategy => ({ ...strategy, ref: createRef<HTMLDivElement>() })))
     );
   }, []);
 
   useEffect(() => {
-    const newLines = rules.map(rule => {
+    const newLines = strategies.map(strategy => {
       try {
         return {
-          line: new LeaderLine(transactionsRef.current, rule.ref.current, {
+          line: new LeaderLine(eventsRef.current, strategy.ref.current, {
             dash: { animation: true },
             endSocket: "left",
             startSocket: "right",
           }),
-          ruleId: rule.id,
+          strategyId: strategy.id,
         };
       } catch (e) {
         return {
@@ -64,35 +64,35 @@ export const App: FC = () => {
             position: () => {},
             remove: () => {},
           },
-          ruleId: rule.id,
+          strategyId: strategy.id,
         };
       }
     });
 
-    setRuleLines(newLines);
+    setStrategyLines(newLines);
 
     return () => newLines.forEach(line => line.line.remove());
-  }, [rules]);
+  }, [strategies]);
 
   useEffect(() => {
-    const alertingRules = intersectionWith((rule, alert) => rule.id === alert.ruleId, rules, alerts).map(
-      rule => rule.id
+    const alertingStrategies = intersectionWith((strategy, alert) => strategy.id === alert.strategyId, strategies, alerts).map(
+        strategy => strategy.id
     );
-    ruleLines.forEach(line => {
+    strategyLines.forEach(line => {
       try {
-        line.line.color = alertingRules.includes(line.ruleId) ? "#dc3545" : "#ff7f50";
+        line.line.color = alertingStrategies.includes(line.strategyId) ? "#dc3545" : "#ff7f50";
       } catch (e) {
         // nothing
       }
     });
-  }, [rules, alerts, ruleLines]);
+  }, [strategies, alerts, strategyLines]);
 
   useEffect(() => {
     const newLines = alerts.map(alert => {
-      const rule = find(r => r.id === alert.ruleId, rules);
+      const strategy = find(strategy => strategy.id === alert.strategyId, strategies);
 
       return {
-        line: new LeaderLine(rule!.ref.current, alert.ref.current, {
+        line: new LeaderLine(strategy!.ref.current, alert.ref.current, {
           color: "#fff",
           endPlugOutline: true,
           endSocket: "left",
@@ -100,16 +100,16 @@ export const App: FC = () => {
           outlineColor: "#dc3545",
           startSocket: "right",
         }),
-        ruleId: rule!.id,
+        strategyId: strategy!.id,
       };
     });
 
     setAlertLines(newLines);
 
     return () => newLines.forEach(line => line.line.remove());
-  }, [alerts, rules]);
+  }, [alerts, strategies]);
 
-  const clearRule = (id: number) => () => setRules(rules.filter(rule => id !== rule.id));
+  const clearStrategy = (id: number) => () => setStrategies(strategies.filter(strategy => id !== strategy.id));
 
   const clearAlert = (id: number) => () => {
     setAlerts(state => {
@@ -125,12 +125,12 @@ export const App: FC = () => {
       ...alert,
       alertId,
       ref: createRef<HTMLDivElement>(),
-      timeout: setTimeout(() => setAlerts(state => state.filter(a => a.alertId !== alertId)), RULE_TIMEOUT),
+      timeout: setTimeout(() => setAlerts(state => state.filter(a => a.alertId !== alertId)), STRATEGY_TIMEOUT),
     };
 
     setAlerts((state: Alert[]) => {
-      const filteredState = state.filter(a => a.ruleId !== alert.ruleId);
-      return [...filteredState, newAlert].sort((a, b) => (a.ruleId > b.ruleId ? 1 : -1));
+      const filteredState = state.filter(a => a.strategyId !== alert.strategyId);
+      return [...filteredState, newAlert].sort((a, b) => (a.strategyId > b.strategyId ? 1 : -1));
     });
   };
 
@@ -144,11 +144,11 @@ export const App: FC = () => {
       <SockJsClient url="/ws/backend" topics={["/topic/alerts"]} onMessage={handleMessage} />
       <SockJsClient url="/ws/backend" topics={["/topic/latency"]} onMessage={handleLatencyMessage} />
       <LayoutContainer>
-        <Header setRules={setRules} />
+        <Header setStrategies={setStrategies} />
         <Container fluid={true} className="flex-grow-1 d-flex w-100 flex-column overflow-hidden">
           <Row className="flex-grow-1 overflow-hidden">
-            <Transactions ref={transactionsRef} />
-            <Rules clearRule={clearRule} rules={rules} alerts={alerts} ruleLines={ruleLines} alertLines={alertLines} />
+            <Events ref={eventsRef} />
+            <Strategies clearStrategy={clearStrategy} strategies={strategies} alerts={alerts} strategyLines={strategyLines} alertLines={alertLines} />
             <Alerts alerts={alerts} clearAlert={clearAlert} lines={alertLines} />
           </Row>
         </Container>

@@ -9,9 +9,9 @@
 ```
 nc -lk 9999
 ```
-2. Run main method of `com.ververica.field.dynamicrules.Main`
+2. Run main method of `com.fraud_detection.Main`
 3. Submit to netcat in correct format:
-rule_id, (rule_state), (events), (aggregation keys), (unique keys), (aggregateFieldName field), (aggregation function), (limit operator), (limit), (window size in minutes)
+strategy, (strategy_state), (events), (aggregation keys), (aggregateFieldName field), (aggregation function), (limit operator), (limit), (window size in minutes)
 
 ##### Examples:
 
@@ -21,17 +21,17 @@ rule_id, (rule_state), (events), (aggregation keys), (unique keys), (aggregateFi
 2,(pause),(pay&refund),(payeeId),,(paymentAmount),(SUM),(>),(10),(20)
 
 ##### Examples JSON:  
-{ "ruleId": 1, "ruleState": "ACTIVE", "events":["pay", "refund"], groupingKeyNames": ["paymentType"], "unique": [], "aggregateFieldName": "paymentAmount", "aggregatorFunctionType": "SUM","limitOperatorType": "GREATER","limit": 500, "windowMinutes": 20}
+{ "strategyId": 1, "strategyState": "ACTIVE", "events":["pay", "refund"], groupingKeyNames": ["paymentType"], "aggregateFieldName": "paymentAmount", "aggregatorFunctionType": "SUM","limitOperatorType": "GREATER","limit": 500, "windowMinutes": 20}
 
 ##### Examples of Control Commands:
 
-{"ruleState": "CONTROL", "controlType":"DELETE_RULES_ALL"}  
-{"ruleState": "CONTROL", "controlType":"EXPORT_RULES_CURRENT"}  
-{"ruleState": "CONTROL", "controlType":"CLEAR_STATE_ALL"}  
+{"strategyState": "CONTROL", "controlType":"DELETE_STRATEGIES_ALL"}  
+{"strategyState": "CONTROL", "controlType":"EXPORT_STRATEGIES_CURRENT"}  
+{"strategyState": "CONTROL", "controlType":"CLEAR_STATE_ALL"}  
 
 
 ##### Examles of CLI params:
---data-source kafka --rules-source kafka --alerts-sink kafka --rules-export-sink kafka
+--data-source kafka --strategies-source kafka --alerts-sink kafka --strategies-export-sink kafka
 
 ##### Special functions:
-1,(active),(event),(paymentType),,(COUNT_FLINK),(SUM),(>),(50),(20)
+1,(active),(eventName),(paymentType),,(COUNT_FLINK),(SUM),(>),(50),(20)

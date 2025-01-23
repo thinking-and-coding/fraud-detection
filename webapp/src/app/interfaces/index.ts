@@ -1,3 +1,3 @@
-export * from "./Rule";
-export * from "./Transaction";
+export * from "./Strategy";
+export * from "./Event";
 export * from "./Alert";

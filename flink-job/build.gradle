@@ -30,7 +30,7 @@ plugins {
     id 'application'
     // shadow plugin to produce fat JARs
     id 'com.github.johnrengelman.shadow' version '7.0.0'
-    id "com.github.sherter.google-java-format" version "0.9"
+    //id "com.github.sherter.google-java-format" version "0.9"
 }
 
 ext {
@@ -45,15 +45,15 @@ ext {
 }
 
 // artifact properties
-group = 'com.ververica.field.dynamicrules'
+group = 'com.fraud_detection.dynamic_strategies'
 version = '1.2'
 jar.archiveName = "${jar.baseName}-${version}-flink-${flinkVersion}.${jar.extension}"
-mainClassName = 'com.ververica.field.dynamicrules.Main'
+mainClassName = 'com.fraud_detection.Main'
 description = """Dynamic Fraud Detection Demo"""
 
 sourceCompatibility = javaVersion
 targetCompatibility = javaVersion
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
@@ -155,7 +155,7 @@ shadowJar {
     archiveName = "${jar.baseName}-${version}-flink-${flinkVersion}-deploy.${jar.extension}"
 }
 
-task resolveDependencies {
+tasks.register('resolveDependencies') {
     doLast {
         project.rootProject.allprojects.each { subProject ->
             subProject.buildscript.configurations.each { configuration ->

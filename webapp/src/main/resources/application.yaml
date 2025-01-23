@@ -3,23 +3,23 @@ server:
 
 security.auth.enabled: false
 
-transactionsRateDisplayLimit: 50
+eventsRateDisplayLimit: 100
 
 kafka:
   topic:
-    transactions: livetransactions
-    rules: rules
+    events: live-events
+    strategies: strategies
     alerts: alerts
     latency: latency
-    current-rules: current-rules
+    current-strategies: current-strategies
   listeners:
-    transactions.id: transactions-listener
+    events.id: events-listener
 
   bootstrap-servers: localhost:9092
 
 web-socket:
   topic:
-    transactions: /topic/transactions
+    events: /topic/events
     alerts: /topic/alerts
     latency: /topic/latency
 
