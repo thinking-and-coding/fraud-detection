@@ -1,4 +1,4 @@
-version: "2.2"
+version: "3.8"
 services:
 
   ### Zookeeper ###
@@ -71,18 +71,28 @@ services:
     command: job-cluster --job-classname com.fraud_detection.Main -Djobmanager.rpc.address=flink-master -Dparallelism.default=2 --data-source kafka --strategies-source kafka --alerts-sink kafka --strategies-export-sink kafka --latency-sink kafka --kafka-host kafka-cp-kafka-headless --kafka-port 9092
     depends_on:
     - kafka-cp-kafka-headless
+    - demo
 
   flink-task-manager:
     image: ${FLINK_DOCKER_IMAGE_NAME:-flink-job-fraud-demo:latest}
     command: task-manager -Djobmanager.rpc.address=flink-master
-    scale: ${DEFAULT_PARALLELISM:-2}
+    deploy:
+      replicas: ${DEFAULT_PARALLELISM:-2}
     depends_on:
     - kafka-cp-kafka-headless
+    - demo
 
   ### Spring Boot Demo###
 
   demo:
     image: demo-fraud-webapp:latest
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 5656 || exit 1"]
+      interval: 30s  # 健康检查间隔
+      timeout: 5s    # 健康检查超时时间
+      retries: 5     # 最大重试次数
+      start_period: 30s  # 容器启动后等待的初始时间
+
     hostname: demo
     ports:
       - "5656:5656"
