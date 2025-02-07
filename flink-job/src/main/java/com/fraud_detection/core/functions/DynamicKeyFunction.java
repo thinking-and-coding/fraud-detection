@@ -56,20 +56,19 @@ public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy
 
     @Override
     public void processElement(Event event, ReadOnlyContext ctx, Collector<Tuple3<Event, String, Integer>> out) throws Exception {
-        ReadOnlyBroadcastState<Integer, Strategy> strategiesState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
-        forkEventForEachGroupingKey(event, strategiesState, out);
-    }
-
-    private void forkEventForEachGroupingKey(Event event, ReadOnlyBroadcastState<Integer, Strategy> strategiesState, Collector<Tuple3<Event, String, Integer>> out) throws Exception {
         List<Integer> strategyIds = new ArrayList<>();
-        for (Map.Entry<Integer, Strategy> entry : strategiesState.immutableEntries()) {
+        ReadOnlyBroadcastState<Integer, Strategy> strategiesState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
+        for (Entry<Integer, Strategy> entry : strategiesState.immutableEntries()) {
             final Strategy strategy = entry.getValue();
-            if (strategy.getEvents().contains(event.getEvent())) {
+            if (strategy.getStrategyState() == StrategyState.ACTIVE && strategy.getEvents().contains(event.getEvent())) {
                 String key = KeysExtractor.getKey(strategy.getGroupingKeyNames(), event);
                 if (StringUtils.isNotBlank(key)) {
                     out.collect(new Tuple3<>(event, key, strategy.getStrategyId()));
+                    strategyIds.add(strategy.getStrategyId());
+                } else {
+                    // output error strategies
+                    ctx.output(Descriptors.errorStrategiesSinkTag, String.format("Strategy:%s for got key failed.", strategy));
                 }
-                strategyIds.add(strategy.getStrategyId());
             }
         }
         Map<String, List<Integer>> map = new HashMap<>();
@@ -79,7 +78,7 @@ public class DynamicKeyFunction extends BroadcastProcessFunction<Event, Strategy
 
     @Override
     public void processBroadcastElement(Strategy strategy, Context ctx, Collector<Tuple3<Event, String, Integer>> out) throws Exception {
-        log.info("{}", strategy);
+        log.info("DynamicKeyFunction.processBroadcastElement strategy:{}", strategy);
         BroadcastState<Integer, Strategy> broadcastState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
         ProcessingUtils.handleStrategyBroadcast(strategy, broadcastState);
         if (strategy.getStrategyState() == StrategyState.CONTROL) {

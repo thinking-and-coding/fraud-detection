@@ -21,15 +21,15 @@ public class Descriptors {
                     BasicTypeInfo.LONG_TYPE_INFO,
                     TypeInformation.of(new TypeHint<Set<Event>>() {}));
 
-    public static final OutputTag<String> demoSinkTag = new OutputTag<String>("demo-sink"){
-
+    public static final OutputTag<String> evaluateSinkTag = new OutputTag<String>("evaluate-sink") {
     };
 
     public static final OutputTag<Long> latencySinkTag = new OutputTag<Long>("latency-sink") {
-
     };
 
     public static final OutputTag<Strategy> currentStrategiesSinkTag = new OutputTag<Strategy>("current-strategies-sink") {
+    };
 
+    public static final OutputTag<String> errorStrategiesSinkTag = new OutputTag<String>("error-strategies-sink") {
     };
 }

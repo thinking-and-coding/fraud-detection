@@ -86,12 +86,12 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
 
         Strategy strategy = ctx.getBroadcastState(Descriptors.strategiesDescriptor).get(tuple.f2);
 
-        if (noStrategyAvailable(strategy)) {
-            log.error("Strategy with ID {} does not exist", tuple.f2);
+        if (!isStrategyAvailable(strategy)) {
+            log.warn("Strategy with ID {} is not available", tuple.f2);
             return;
         }
 
-        if (strategy.getStrategyState() == StrategyState.ACTIVE) {
+        try {
             Long windowStartForEvent = strategy.getWindowStartFor(currentEventTime);
 
             long cleanupTime = (currentEventTime / 1000) * 1000;
@@ -106,16 +106,8 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
             BigDecimal aggregateResult = aggregator.getLocalValue();
             boolean strategyResult = strategy.apply(aggregateResult);
 
-            ctx.output(
-                Descriptors.demoSinkTag,
-                "Engine Strategy "
-                    + strategy.getStrategyId()
-                    + " | "
-                    + tuple.f1
-                    + " : "
-                    + aggregateResult.toString()
-                    + " -> "
-                    + strategyResult);
+            ctx.output(Descriptors.evaluateSinkTag,
+                    "Engine Strategy " + strategy.getStrategyId() + " | " + tuple.f1 + " : " + aggregateResult.toString() + " -> " + strategyResult);
 
             if (strategyResult) {
                 if (COUNT_WITH_RESET.equals(strategy.getAggregateFieldName())) {
@@ -124,12 +116,15 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
                 alertMeter.markEvent();
                 out.collect(new Alert<>(strategy.getStrategyId(), strategy, tuple.f1, tuple.f0, aggregateResult));
             }
+        } catch (Exception e) {
+            ctx.output(Descriptors.errorStrategiesSinkTag, String.format("Strategy:%s for aggregate values failed. ErrorMsg:%s", strategy, e));
+            log.error("Strategy with ID {} for aggregate values failed. ErrorMsg:", strategy.getStrategyId(), e);
         }
     }
 
     @Override
     public void processBroadcastElement(Strategy strategy, Context ctx, Collector<Alert> out) throws Exception {
-        log.info("{}", strategy);
+        log.info("DynamicAlertFunction.processBroadcastElement strategy:{}", strategy);
         BroadcastState<Integer, Strategy> broadcastState = ctx.getBroadcastState(Descriptors.strategiesDescriptor);
         handleStrategyBroadcast(strategy, broadcastState);
         updateWidestWindowStrategy(strategy, broadcastState);
@@ -157,7 +152,7 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
                 while (entriesIterator.hasNext()) {
                     Entry<Integer, Strategy> strategyEntry = entriesIterator.next();
                     strategiesState.remove(strategyEntry.getKey());
-                    log.info("Removed Strategy {}", strategyEntry.getValue());
+                    log.info("DynamicAlertFunction.processBroadcastElement Removed Strategy {}", strategyEntry.getValue());
                 }
                 break;
         }
@@ -187,13 +182,10 @@ public class DynamicAlertFunction extends KeyedBroadcastProcessFunction<String, 
         }
     }
 
-    private boolean noStrategyAvailable(Strategy strategy) {
+    private boolean isStrategyAvailable(Strategy strategy) {
         // This could happen if the BroadcastState in this CoProcessFunction was updated after it was
         // updated and used in `DynamicKeyFunction`
-        if (strategy == null) {
-            return true;
-        }
-        return false;
+        return strategy != null && strategy.getStrategyState() == StrategyState.ACTIVE;
     }
 
     private void updateWidestWindowStrategy(Strategy strategy, BroadcastState<Integer, Strategy> broadcastState) throws Exception {
