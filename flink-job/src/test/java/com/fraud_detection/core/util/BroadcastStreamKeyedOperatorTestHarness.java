@@ -31,7 +31,7 @@ import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
 import org.apache.flink.streaming.api.operators.co.CoBroadcastWithKeyedOperator;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.runtime.streamrecord.StreamRecord;
-import org.apache.flink.streaming.util.AbstractStreamOperatorTestHarness;
+import org.apache.flink.streaming.util.KeyedBroadcastOperatorTestHarness;
 import org.apache.flink.util.Preconditions;
 
 /**
@@ -42,7 +42,7 @@ import org.apache.flink.util.Preconditions;
  * watermarks can be retrieved. you are free to modify these.
  */
 public class BroadcastStreamKeyedOperatorTestHarness<K, IN1, IN2, OUT>
-    extends AbstractStreamOperatorTestHarness<OUT> {
+    extends KeyedBroadcastOperatorTestHarness<K, IN1, IN2, OUT> {
 
   private final CoBroadcastWithKeyedOperator<K, IN1, IN2, OUT> twoInputOperator;
 
@@ -64,7 +64,7 @@ public class BroadcastStreamKeyedOperatorTestHarness<K, IN1, IN2, OUT>
       int numSubtasks,
       int subtaskIndex)
       throws Exception {
-    super(operator, maxParallelism, numSubtasks, subtaskIndex);
+    super(operator, keySelector1, keyType, maxParallelism, numSubtasks, subtaskIndex);
 
     ClosureCleaner.clean(keySelector1, ExecutionConfig.ClosureCleanerLevel.RECURSIVE, false);
     ClosureCleaner.clean(keySelector2, ExecutionConfig.ClosureCleanerLevel.RECURSIVE, false);

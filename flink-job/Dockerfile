@@ -15,7 +15,7 @@ RUN mv /home/gradle/app/build/libs/dynamic-fraud-detection-demo*-deploy.jar /hom
 
 # ---
 
-FROM flink:1.15-java8
+FROM flink:1.17-java8
 
 COPY --from=job-build /home/gradle/app/build/libs/dynamic-fraud-detection-demo-deploy.jar lib/job.jar
 COPY docker-entrypoint.sh /
