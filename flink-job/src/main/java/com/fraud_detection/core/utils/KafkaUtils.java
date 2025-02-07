@@ -18,32 +18,33 @@
 
 package com.fraud_detection.core.utils;
 
-import static com.fraud_detection.config.Parameters.KAFKA_HOST;
-import static com.fraud_detection.config.Parameters.KAFKA_PORT;
-import static com.fraud_detection.config.Parameters.OFFSET;
-
 import com.fraud_detection.config.Config;
+import com.fraud_detection.config.Parameters;
+
 import java.util.Properties;
+import java.util.UUID;
 
 public class KafkaUtils {
 
-  public static Properties initConsumerProperties(Config config) {
-    Properties kafkaProps = initProperties(config);
-    String offset = config.get(OFFSET);
-    kafkaProps.setProperty("auto.offset.reset", offset);
-    return kafkaProps;
-  }
+    public static Properties initConsumerProperties(Config config) {
+        Properties kafkaProps = initProperties(config);
+        String offset = config.get(Parameters.OFFSET);
+        kafkaProps.setProperty("auto.offset.reset", offset);
+        String groupId = config.get(Parameters.KAFKA_GROUP_ID);
+        kafkaProps.setProperty("group.id", groupId);
+        Integer maxPollRecords = config.get(Parameters.MAX_POLL_RECORDS);
+        kafkaProps.setProperty("max.poll.records", maxPollRecords.toString());
+        kafkaProps.setProperty("client.id", "flink-kafka-client-" + UUID.randomUUID());
+        return kafkaProps;
+    }
 
-  public static Properties initProducerProperties(Config params) {
-    return initProperties(params);
-  }
+    public static Properties initProducerProperties(Config params) {
+        return initProperties(params);
+    }
 
-  private static Properties initProperties(Config config) {
-    Properties kafkaProps = new Properties();
-    String kafkaHost = config.get(KAFKA_HOST);
-    int kafkaPort = config.get(KAFKA_PORT);
-    String servers = String.format("%s:%s", kafkaHost, kafkaPort);
-    kafkaProps.setProperty("bootstrap.servers", servers);
-    return kafkaProps;
-  }
+    private static Properties initProperties(Config config) {
+        Properties kafkaProps = new Properties();
+        kafkaProps.setProperty("bootstrap.servers", config.get(Parameters.KAFKA_SERVERS));
+        return kafkaProps;
+    }
 }

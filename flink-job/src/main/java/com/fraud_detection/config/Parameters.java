@@ -56,11 +56,11 @@ public class Parameters {
     }
 
     // Kafka:
-    public static final Param<String> KAFKA_HOST = Param.string("kafka-host", "localhost");
-
-    public static final Param<Integer> KAFKA_PORT = Param.integer("kafka-port", 9092);
+    public static final Param<String> KAFKA_SERVERS = Param.string("kafka-servers", "localhost:9092");
 
     public static final Param<String> DATA_TOPIC = Param.string("data-topic", "live-events");
+
+    public static final Param<String> KAFKA_GROUP_ID = Param.string("group-id", "fraud-detection");
 
     public static final Param<String> ALERTS_TOPIC = Param.string("alerts-topic", "alerts");
 
@@ -89,9 +89,12 @@ public class Parameters {
     public static final Param<Integer> CHECKPOINT_INTERVAL = Param.integer("checkpoint-interval", 60_000_0);
     public static final Param<Integer> MIN_PAUSE_BETWEEN_CHECKPOINTS = Param.integer("min-pause-btwn-checkpoints", 10000);
     public static final Param<Integer> OUT_OF_ORDERLESS = Param.integer("out-of-orderless", 500);
+    public static final Param<Integer> MAX_POLL_RECORDS = Param.integer("max-poll-records", 100);
+
 
     public static final List<Param<String>> STRING_PARAMS = Arrays.asList(
-            KAFKA_HOST,
+            KAFKA_SERVERS,
+            KAFKA_GROUP_ID,
             DATA_TOPIC,
             ALERTS_TOPIC,
             STRATEGIES_TOPIC,
@@ -105,12 +108,12 @@ public class Parameters {
     );
 
     public static final List<Param<Integer>> INT_PARAMS = Arrays.asList(
-            KAFKA_PORT,
             RECORDS_PER_SECOND,
             SOURCE_PARALLELISM,
             CHECKPOINT_INTERVAL,
             MIN_PAUSE_BETWEEN_CHECKPOINTS,
-            OUT_OF_ORDERLESS
+            OUT_OF_ORDERLESS,
+            MAX_POLL_RECORDS
     );
 
     public static final List<Param<Boolean>> BOOL_PARAMS = Arrays.asList(

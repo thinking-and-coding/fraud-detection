@@ -18,8 +18,6 @@
 
 package com.fraud_detection.config;
 
-import static com.fraud_detection.config.Parameters.KAFKA_HOST;
-import static com.fraud_detection.config.Parameters.KAFKA_PORT;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
@@ -28,12 +26,12 @@ public class ConfigTest {
 
   @Test
   public void testParameters() {
-    String[] args = new String[] {"--kafka-host", "host-from-args"};
+    String[] args = new String[] {"--kafka-servers", "host-from-args"};
     Parameters parameters = Parameters.fromArgs(args);
     Config config = Config.fromParameters(parameters);
 
-    final String kafkaHost = config.get(KAFKA_HOST);
-    assertEquals("Wrong config parameter retrived", "host-from-args", kafkaHost);
+    final String kafkaServers = config.get(Parameters.KAFKA_SERVERS);
+    assertEquals("Wrong config parameter retrived", "host-from-args", kafkaServers);
   }
 
   @Test
@@ -42,7 +40,7 @@ public class ConfigTest {
     Parameters parameters = Parameters.fromArgs(args);
     Config config = Config.fromParameters(parameters);
 
-    final Integer kafkaPort = config.get(KAFKA_PORT);
-    assertEquals("Wrong config parameter retrived", new Integer(9092), kafkaPort);
+    final String kafkaGroupId = config.get(Parameters.KAFKA_GROUP_ID);
+    assertEquals("Wrong config parameter retrived", "fraud-detection", kafkaGroupId);
   }
 }
