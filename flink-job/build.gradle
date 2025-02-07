@@ -35,7 +35,7 @@ plugins {
 
 ext {
     javaVersion = '1.8'
-    flinkVersion = '1.15.4'
+    flinkVersion = '1.17.2'
     scalaBinaryVersion = '2.12'
     slf4jVersion = '2.0.16'
     log4jVersion = '2.24.3'
@@ -124,8 +124,6 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
 
     flinkShadowJar "org.apache.flink:flink-connector-kafka:$flinkVersion"
-    flinkShadowJar "org.apache.flink:flink-connector-gcp-pubsub:$flinkVersion"
-    flinkShadowJar group: 'com.google.cloud', name: 'google-cloud-pubsub', version: '1.51.0'
 }
 
 // make compileOnly dependencies available for tests:
