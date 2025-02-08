@@ -82,38 +82,8 @@ public class Engine {
             .uid("DynamicAlertFunction")
             .name("Dynamic Strategy Evaluation Function");
 
-    DataStream<String> allStrategyEvaluations =
-        alerts.getSideOutput(Descriptors.demoSinkTag);
-
-    DataStream<Long> latency =
-        alerts.getSideOutput(Descriptors.latencySinkTag);
-
-    DataStream<Strategy> currentStrategies =
-        alerts.getSideOutput(Descriptors.currentStrategiesSinkTag);
-
-    alerts.print().name("Alert STDOUT Sink");
-    allStrategyEvaluations.print().setParallelism(1).name("Strategy Evaluation Sink");
-
-    DataStream<String> alertsJson = AlertsSink.alertsStreamToJson(alerts);
-    DataStream<String> currentStrategiesJson = CurrentStrategiesSink.strategiesStreamToJson(currentStrategies);
-
-    currentStrategiesJson.print();
-
-    DataStreamSink<String> alertsSink = AlertsSink.addAlertsSink(config, alertsJson);
-    alertsSink.setParallelism(1).name("Alerts JSON Sink");
-
-    DataStreamSink<String> currentStrategiesSink =
-        CurrentStrategiesSink.addStrategiesSink(config, currentStrategiesJson);
-    currentStrategiesSink.setParallelism(1);
-
-    DataStream<String> latencies =
-        latency
-            .timeWindowAll(Time.seconds(10))
-            .aggregate(new AverageAggregate())
-            .map(String::valueOf);
-
-    DataStreamSink<String> latencySink = LatencySink.addLatencySink(config, latencies);
-    latencySink.name("Latency Sink");
+    processAlertsSink(alerts);
+    processSideOutputs(alerts);
 
     env.execute("Fraud Detection Engine");
   }
@@ -166,6 +136,41 @@ public class Engine {
       env.getCheckpointConfig().setMinPauseBetweenCheckpoints(minPauseBtwnCheckpoints);
     }
     return env;
+  }
+
+  private void processAlertsSink(SingleOutputStreamOperator<Alert> alerts) {
+    // alerts sink
+    alerts.print().name("Alerts Output");
+    DataStream<String> alertsJson = AlertsSink.alertsStreamToJson(alerts);
+    DataStreamSink<String> alertsSink = AlertsSink.addAlertsSink(config, alertsJson);
+    alertsSink.setParallelism(1).name("Alerts Sink");
+  }
+
+  private void processSideOutputs(SingleOutputStreamOperator<Alert> alerts) {
+    // evaluation sink
+    DataStream<String> allStrategyEvaluations =
+            alerts.getSideOutput(Descriptors.evaluateSinkTag);
+    allStrategyEvaluations.print().setParallelism(1).name("Strategy Evaluation Sink");
+
+    // current strategies sink
+    DataStream<Strategy> currentStrategies =
+            alerts.getSideOutput(Descriptors.currentStrategiesSinkTag);
+    DataStream<String> currentStrategiesJson = CurrentStrategiesSink.strategiesStreamToJson(currentStrategies);
+    currentStrategiesJson.print();
+    DataStreamSink<String> currentStrategiesSink =
+            CurrentStrategiesSink.addStrategiesSink(config, currentStrategiesJson);
+    currentStrategiesSink.setParallelism(1).name("Current Strategies Sink");
+
+    // error strategies sink
+    DataStream<String> errorStrategies =
+            alerts.getSideOutput(Descriptors.errorStrategiesSinkTag);
+    errorStrategies.print().setParallelism(1).name("Error Strategies Sink");
+
+    // latency sink
+    DataStream<Long> latency = alerts.getSideOutput(Descriptors.latencySinkTag);
+    DataStream<String> latencies = latency.timeWindowAll(Time.seconds(10)).aggregate(new AverageAggregate()).map(String::valueOf);
+    DataStreamSink<String> latencySink = LatencySink.addLatencySink(config, latencies);
+    latencySink.name("Latency Sink");
   }
 
 }

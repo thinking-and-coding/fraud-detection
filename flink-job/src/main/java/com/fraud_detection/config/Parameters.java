@@ -77,6 +77,7 @@ public class Parameters {
     public static final Param<String> ALERTS_SINK = Param.string("alerts-sink", "STDOUT");
     public static final Param<String> LATENCY_SINK = Param.string("latency-sink", "STDOUT");
     public static final Param<String> STRATEGIES_EXPORT_SINK = Param.string("strategies-export-sink", "STDOUT");
+    public static final Param<String> ERROR_STRATEGIES_SINK = Param.string("error_strategies-sink", "STDOUT");
 
     public static final Param<Integer> RECORDS_PER_SECOND = Param.integer("records-per-second", 2);
 
@@ -104,7 +105,8 @@ public class Parameters {
             EVENTS_SOURCE,
             ALERTS_SINK,
             LATENCY_SINK,
-            STRATEGIES_EXPORT_SINK
+            STRATEGIES_EXPORT_SINK,
+            ERROR_STRATEGIES_SINK
     );
 
     public static final List<Param<Integer>> INT_PARAMS = Arrays.asList(
